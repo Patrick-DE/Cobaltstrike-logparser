@@ -1,6 +1,7 @@
 #custom
 logs/
 log.db
+activity.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
