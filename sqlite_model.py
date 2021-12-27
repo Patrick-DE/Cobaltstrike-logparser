@@ -1,6 +1,7 @@
 from sqlalchemy import Column, DateTime, Integer, String, Enum
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.sql.schema import ForeignKey
+import re
 
 import enum
 class EntryType(enum.Enum):
@@ -12,6 +13,10 @@ class EntryType(enum.Enum):
       note = 6
       error = 7
       indicator = 8
+      # custom attributes
+      download = 9
+      upload = 10
+      events = 11
 
 
 Base = declarative_base()
@@ -30,6 +35,7 @@ class Beacon(Base):
       pid = Column(Integer, nullable=True)
       joined = Column(DateTime, nullable=True)
       exited = Column(DateTime, nullable=True)
+      entries = relationship("Entry", back_populates="parent",lazy='joined', join_depth=1)
       
 class Entry(Base):
       """
@@ -42,3 +48,16 @@ class Entry(Base):
       type = Column(Enum(EntryType))
       content = Column(String)
       parent_id = Column(Integer, ForeignKey('beacon.id'))
+      parent = relationship("Beacon", back_populates="entries", lazy="joined", join_depth=1)
+
+      #def __getattribute__(self, item):
+      #      if item == "content" and self.type == EntryType.input:
+      #            return re.sub(r"\s*<.*>\s*(.*)", "", self.content).group(1)
+
+      def to_row(self):
+            if self.type == EntryType.input:
+                  content = re.sub(r"\s*<.*>\s*(.*)", r"\1", self.content)
+                  date = self.timestamp.strftime("%d/%m/%y")
+                  time = self.timestamp.strftime("%H:%M")
+                  b = self.parent
+                  return [date, time, b.hostname, content, b.user, b.ip]
