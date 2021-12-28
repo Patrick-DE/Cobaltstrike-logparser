@@ -45,6 +45,7 @@ def store_to_file(filename: String, content: String) -> None:
         print(content, file=text_file)
 
 def write_to_csv(filename: String, header: List, rows: List) -> None:
+    filename = os.path.abspath(filename.strip())
     with open(filename, 'w', encoding='UTF8', newline="") as f:
         writer = csv.writer(f)
         #writer.writerow("sep=,")

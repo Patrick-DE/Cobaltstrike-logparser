@@ -6,7 +6,7 @@ import sqlalchemy
 from sqlalchemy.future import select
 from sqlalchemy.future.engine import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import exc, update, delete, text
+from sqlalchemy import exc, update, delete, text, or_
 from sqlalchemy.sql.expression import bindparam
 
 from sqlite_model import *
@@ -194,13 +194,46 @@ def get_all_entries_filtered(filter: EntryType) -> List:
     session = SESSION()
     rec = []
     try:
-        records: Entry = session.execute((select(Entry).where(Entry.type == filter).order_by(Entry.timestamp.asc())))
+        records: Entry = session.execute(select(Entry).where(Entry.type == filter).order_by(Entry.timestamp.asc()))
         
-        for record in records.scalars():
+        for record in records.unique().scalars():
             rec.append(record)
+
+        return rec
     except Exception as ex:
         log(f"get_all_entries() Failed: {ex}", "e")
     finally:
         session.close()
 
-    return rec
+
+def remove_clutter():
+    """This function removes the following entries from the DB:
+    - keylogger output
+    - sleep commands issues by the operator
+    - BeaconBot responses
+    - Screenshot output"""
+    session = SESSION()
+    try:
+        entries = session.query(Entry).filter(Entry.type == EntryType.input).filter(
+            or_(
+                Entry.content.contains('> sleep'),
+                Entry.content.contains('> exit')
+            ))
+        entries.delete(synchronize_session=False)
+        
+        entries1 = session.query(Entry).filter(Entry.type == EntryType.output).filter(
+            or_(
+                Entry.content.contains('received keystrokes'),
+                Entry.content.contains('<BeaconBot>'),
+                Entry.content.contains('beacon is late'),
+                Entry.content.contains('received screenshot'),
+            ))
+        entries1.delete(synchronize_session=False)
+        session.commit()
+        
+    except Exception as ex:
+        log(f"get_all_entries() Failed: {ex}", "e")
+    finally:
+        session.close()
+
+    

@@ -61,10 +61,20 @@ class Entry(Base):
       #      if item == "content" and self.type == EntryType.input:
       #            return re.sub(r"\s*<.*>\s*(.*)", "", self.content).group(1)
 
+      def get_operator(self):
+            if self.type == EntryType.input:
+                  return self.content.split("<")[1].split(">")[0]
+            return None
+
+      def get_input(self):
+            if self.type == EntryType.input:
+                  return re.sub(r"\s*<.*>\s*(.*)", r"\1", self.content)
+            return None
+
       def to_row(self):
             if self.type == EntryType.input:
-                  content = re.sub(r"\s*<.*>\s*(.*)", r"\1", self.content)
+                  input = self.get_input()
                   date = self.timestamp.strftime("%d/%m/%y")
                   time = self.timestamp.strftime("%H:%M")
                   b = self.parent
-                  return [date, time, b.hostname, content, b.user, b.ip]
+                  return [date, time, b.hostname, input, b.user, b.ip]

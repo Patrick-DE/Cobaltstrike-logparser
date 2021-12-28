@@ -136,45 +136,26 @@ def redact(entry):
     """This function replaces the following entry.content with [REDACTED] in the DB:
     - NTLM hashes, based on regex
     - logonpasswords
-    - password=
-    - pass=
-    - NTLM :
-    - SHA1 :
+    - [-](password|pass|p|pkv)[\s|=|:]
+    - (NTLM|SHA1) :
     """
     content = entry.content
     r = r"\1[REDACTED]"
-    # ntlm
-    content = re.sub(r"^(\\$NT\\$)?[a-f0-9]{32}$", r, content)
+    # password=, pass=, pvk=, -p:
+    content = re.sub(r"((?:\/|-+|\s)(?:p|pass|password|pvk)\s*(?:=|\s|:)\s*)\S+", r, content, re.I)
+    # NTLM : , SHA1 : 
+    content = re.sub(r"((?:NTLM|SHA1)\s+:\s)\b\w+\b", r, content, re.I)
     # logonpasswords
     content = re.sub(r"(\w+:\d+:)\w+:\w+:::", r, content)
-    # password=, pass=
-    content = re.sub(r"(.*(?:pass|password|pvk)\s*(?:=|\s|:)\s*)\b\w+\b", r, content)
-    # NTLM : , SHA1 : 
-    content = re.sub(r"((?:NTLM|SHA1)\s+:\s)\b\w+\b", r, content)
-    update_element("Entry", id=entry.id, content=content)
-
-
-def remove_clutter(entry):
-    """This function removes the following entries from the DB:
-    - keylogger output
-    - sleep commands issues by the operator
-    - BeaconBot responses
-    - Screenshot output"""
-    content = entry.content
-    delete = False
-    #keylogger output
-    if "received keystrokes" in content:
-        delete = True
-    # sleep commands
-    if entry.type == EntryType.input and re.match(r"^sleep(\s\d+)+$", content):
-        delete = True
-    if "<BeaconBot>" in content or "beacon is late" in content:
-        delete = True
-    if "received screenshot" in content:
-        delete = True
-    
-    if delete:
-        delete_element("Entry", entry.id)
+    # /aes265:, /rc4:, /statekey:
+    content = re.sub(r"(.*\/(?:aes256|rc4|statekey)\s*(?:=|:)\s*)(.*?)\s*$", r, content, re.I)
+    # make_token
+    content = re.sub(r"(make_token .*\s)(.*)", r, content, re.I)
+    update_element(Entry, id=entry.id, content=content)
+    # ntlm
+    content = re.sub(r"^(\\$NT\\$)?[a-f0-9]{32}$", r, content)
+    # redact strings which have 32bites or 64 like aes265
+    content = re.sub(r"\b([A-Fa-f0-9]{64}|[A-Fa-f0-9]{32})\b", r, content)
 
 
 def excel_save(entry):
@@ -182,7 +163,7 @@ def excel_save(entry):
     content = entry.content
     if "," in content:
         content.replace(",", ";")
-        update_element("Entry", entry.id, {Entry.content: content})
+        update_element(Entry, id=entry.id, content=content)
 
 
 def analyze_entries(beacon):
@@ -190,8 +171,8 @@ def analyze_entries(beacon):
     - remove_clutter
     - redact
     - excel_save"""
+    remove_clutter()
     for entry in beacon.entries:
-        remove_clutter(entry)
         redact(entry)
         excel_save(entry)
 
@@ -219,10 +200,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='parse CobaltStrike logs and store them in a DB to create reports')
     parser.add_argument('-w','--worker',type=int, default=10, help='Set amount of workers')
     parser.add_argument('-f', '--folder', default=curr_path, help='Folder path to start to walking for files')
-    parser.add_argument('-p', '--database-path', default= curr_path+r"\log.db", help='Database path')
+    parser.add_argument('-dp', '--database-path', default= curr_path+r"\log.db", help='Database path')
     parser.add_argument('-r', '--redact', action='store_true', help='Redact sensitive values')
     parser.add_argument('-d', '--debug', action='store_true', help='Activate debugging')
-    parser.add_argument('-o', '--output', default= curr_path+r"\activity.csv", help='Output path for CSV')
+    parser.add_argument('-o', '--output', default="", help='Output path for CSV')
     parser.add_argument('-m', '--minimize', help='Remove unnecessary data: keyloggs,beaconbot,sleep')
     args = parser.parse_args()
 
@@ -242,29 +223,39 @@ if __name__ == "__main__":
 
     with futures.ThreadPoolExecutor(max_workers=args.worker) as e:
         # create all beacons
-        # result_futures = list(map(lambda file: e.submit(create_all_beacons, file), log_files))
-        # for idx, future in enumerate(futures.as_completed(result_futures)):
-        #     printProgressBar(idx, len(log_files), "Creating Beacons")
-        # #futures.wait(result_futures, timeout=None, return_when=futures.ALL_COMPLETED)
+        result_futures = list(map(lambda file: e.submit(create_all_beacons, file), log_files))
+        for idx, future in enumerate(futures.as_completed(result_futures)):
+            printProgressBar(idx, len(result_futures), "Creating Beacons")
+        ##futures.wait(result_futures, timeout=None, return_when=futures.ALL_COMPLETED)
         
-        # result_futures = list(map(lambda file: e.submit(parse_log_file, file), log_files))
-        # result_futures += list(map(lambda file: e.submit(parse_log_file, file), ev_files))
-        # result_futures += list(map(lambda file: e.submit(parse_log_file, file), dl_files))
-        # for idx, future in enumerate(futures.as_completed(result_futures)):
-            # printProgressBar(idx, len(log_files)+len(ev_files)+len(dl_files), "Process logs")
+        result_futures = list(map(lambda file: e.submit(parse_log_file, file), log_files))
+        result_futures += list(map(lambda file: e.submit(parse_log_file, file), ev_files))
+        result_futures += list(map(lambda file: e.submit(parse_log_file, file), dl_files))
+        for idx, future in enumerate(futures.as_completed(result_futures)):
+            printProgressBar(idx, len(result_futures), "Process logs")
 
         beacons = get_all_elements(Beacon)
         result_futures = list(map(lambda beacon: e.submit(fill_beacon_info, beacon), beacons))
         result_futures += list(map(lambda beacon: e.submit(analyze_entries, beacon), beacons))
         for idx, future in enumerate(futures.as_completed(result_futures)):
-            printProgressBar(idx, len(beacons), "Analyzing logs")
+            printProgressBar(idx, len(result_futures), "Analyzing logs")
 
     if args.output:
+        # input report
         entries = get_all_entries_filtered(filter=EntryType.input)
         rows = []
         for entry in entries:
             rows.append(entry.to_row())
         header = ["Date", "Time", "Hostname", "Command", "User", "IP"]
         write_to_csv(args.output, header, rows)
+
+        # get download and upload report
+        entries = get_all_entries_filtered(filter=EntryType.download)
+        entries =+ get_all_entries_filtered(filter=EntryType.upload)
+        rows = []
+        for entry in entries:
+            rows.append(entry.to_row())
+        header = ["Date", "Time", "Hostname", "Command", "User", "IP"]
+        write_to_csv("activity_dl.csv", header, rows)
 
     print (time.time() - start)
