@@ -9,12 +9,71 @@ pattern_time = r"(?P<timestamp>(?:\d{2}\/*){2} (?:\d\d:*){3})\s(?P<timezone>\S+)
 pattern_line = pattern_time + r"\[(?P<type>\w+)\](?P<content>.*)"
 pattern_ipv4 = r"(?P<ipv4>\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b)"
 pattern_date = r"\\(?P<date>\d{6})\\"
-pattern_metadata = pattern_ipv4 + r"|(?:\w+:\s(.*?);)"
+pattern_metadata = pattern_ipv4 + r"|(?:\w+:\s(.*?);)|(?P<beacon>\w+_\d+)"
 pattern_download = pattern_time + pattern_ipv4 + r"\s\d+\s\d+\s.*?\s(?P<fname>.*)\s(?P<path>\b.*\b)"
-pattern_events = pattern_time + r"(?P<content>.*?from\s(?P<User>\b.*\b\s*.*?)@"+ pattern_ipv4 +"\s\((?P<hostname>.*?)\))"
+pattern_events = pattern_time + r"(?P<content>.*?from\s(?P<user>\b.*\b\s*.*?)@"+ pattern_ipv4 +"\s\((?P<hostname>.*?)\))"
+
+
+def parse_beacon_metadata(line, date=None):
+    """Tries to parse the line based on the pattern_metadata.
+    
+    Returns:
+    - Dict with beacon metadata
+    - Empty Dict"""
+    entry = re.match(pattern_line, line)
+    if not entry:
+        return {}
+    
+    if date:
+        date = datetime.strptime(date + " " + entry["timestamp"].split(' ')[1], '%y%m%d %H:%M:%S')
+
+    matches = re.findall(pattern_metadata, entry["content"])
+    if len(matches) == 9:
+        return {
+            "ip_ext":''.join(matches[0]), 
+            "hostname":''.join(matches[2]), 
+            "user":''.join(matches[3]),
+            "process":''.join(matches[4]),
+            "pid":''.join(matches[5]),
+            "joined":date
+        }
+    else:
+        #log(f"parse_beacon_metadata(): Did not detect metadata: {line}", "w")
+        return {}
+
+
+def get_beacon_id(file):
+    """Get the beacon id which is based on the beacon_xxxx.log files name"""
+    filename = os.path.basename(file)
+    return filename.split("_")[1].split(".")[0]
+    
+
+def create_all_beacons(file):
+    """Stores all beacons detected via the event.log in the DB"""
+    date = re.findall(pattern_date, file, re.MULTILINE)[0]
+    bid = get_beacon_id(file)
+    if bid == "aggressor":
+        return
+
+    lip = re.findall(pattern_ipv4, file)
+    if lip:
+        lip = lip[0]
+    else:
+        lip = "unknown"
+
+    with open(file) as f:
+        first_line = f.readline()
+        beacon_info = parse_beacon_metadata(first_line, date)
+
+    create_element(Beacon, id=bid, ip=lip, date=date, **beacon_info)
 
 
 def get_pattern(file):
+    """Returns the pattern based on the filepath provided.
+    The following pattern are available:
+    - beacon_xxx.log : pattern_line
+    - downloads.log : pattern_download
+    - events.log : pattern_events"""
     fn = os.path.basename(file)
     if "beacon" in fn:
         return "beacon", pattern_line
@@ -28,6 +87,7 @@ def get_pattern(file):
 
 
 def build_entry(row, logtype, date, matches):
+    """Build an entry attribute based on the logtype provided"""
     row['timestamp']  =  datetime.strptime(date + " " + matches["timestamp"].split(' ')[1], '%y%m%d %H:%M:%S')
     row['timezone'] = matches["timezone"]
     if logtype == "beacon":
@@ -36,30 +96,25 @@ def build_entry(row, logtype, date, matches):
     elif logtype == "download":
         row['type'] = logtype
         row['content'] = f"{matches['path']}\{matches['fname']}"
-        row['parent_id'] = create_beacon(matches["ipv4"]).id
+        row['parent_id'] = create_element(Beacon, ip=matches["ipv4"])
     elif logtype == "events":
         row['type'] = logtype
         row['content'] = matches["content"]
-        row['parent_id'] = create_beacon(matches["ipv4"]).id
+        row['parent_id'] = create_element(Beacon, ip=matches["ipv4"], user=matches["user"], hostname=matches["hostname"], joined=matches["timestamp"])
     else:
         log(f"build_entry() Failed: Logtype not supported", "e")
     return row
 
 
 def parse_log_file(file):
+    """Parses the file provided and stores an entry per valid line in the DB"""
     logtype, pattern = get_pattern(file)
-    # create beacon
-    ip = re.match(pattern_ipv4, file)
-    date = re.findall(pattern_date, file, re.MULTILINE)
-    if date:
-        date = date[0]
-    else:
-        log(f"parse_log_file() Failed: Could not identify the date", "e")
-        return None
-    
     row = {'timestamp': None, 'timezone': None, 'type': None, 'content': None, "parent_id": None}
-    if ip:
-        row["parent_id"] = create_beacon(ip[0]).id
+    
+    date = re.findall(pattern_date, file, re.MULTILINE)[0]
+    if "beacon" in logtype:
+        row["parent_id"] = get_beacon_id(file)
+    
 
     # parse log entries
     lines = open(file, 'r', encoding="UTF-8").readlines()
@@ -68,13 +123,7 @@ def parse_log_file(file):
         
         if matches != None and matches.group(3):
             if row['content'] != None:
-                create_entry(
-                    row['timestamp'], 
-                    row["timezone"],
-                    row['type'],
-                    row['content'],
-                    row['parent_id']
-                    )
+                create_element(Entry, **row)
 
             row = build_entry(row, logtype, date, matches)
         elif not matches and logtype == "beacon":
@@ -84,6 +133,14 @@ def parse_log_file(file):
 
 
 def redact(entry):
+    """This function replaces the following entry.content with [REDACTED] in the DB:
+    - NTLM hashes, based on regex
+    - logonpasswords
+    - password=
+    - pass=
+    - NTLM :
+    - SHA1 :
+    """
     content = entry.content
     r = r"\1[REDACTED]"
     # ntlm
@@ -94,10 +151,15 @@ def redact(entry):
     content = re.sub(r"(.*(?:pass|password|pvk)\s*(?:=|\s|:)\s*)\b\w+\b", r, content)
     # NTLM : , SHA1 : 
     content = re.sub(r"((?:NTLM|SHA1)\s+:\s)\b\w+\b", r, content)
-    update_element("Entry", entry.id, {Entry.content: content })
+    update_element("Entry", id=entry.id, content=content)
 
 
 def remove_clutter(entry):
+    """This function removes the following entries from the DB:
+    - keylogger output
+    - sleep commands issues by the operator
+    - BeaconBot responses
+    - Screenshot output"""
     content = entry.content
     delete = False
     #keylogger output
@@ -116,6 +178,7 @@ def remove_clutter(entry):
 
 
 def excel_save(entry):
+    """Replaces the csv seperator ',' with ';'"""
     content = entry.content
     if "," in content:
         content.replace(",", ";")
@@ -123,80 +186,78 @@ def excel_save(entry):
 
 
 def analyze_entries(beacon):
+    """Iterating over the entries associated with the beacon and executing the following functions:
+    - remove_clutter
+    - redact
+    - excel_save"""
     for entry in beacon.entries:
         remove_clutter(entry)
         redact(entry)
         excel_save(entry)
 
 
-def fill_beacon_info(id):
-    entry = get_first_metadata_entry_of_beacon(id)
-    if not entry:
-        return
+def fill_beacon_info(beacon):
+    """Updates the beacon metadata if not already populated based on the beacons first metadata entry"""
+    beacon_info: Dict = {}
+    mentry = get_first_metadata_entry_of_beacon(beacon.id)
+    if not beacon.hostname and mentry:
+        beacon_info = parse_beacon_metadata(mentry["content"], beacon["date"])
+    
+    eentry = get_last_entry_of_beacon(beacon.id)
+    if not beacon.exited and eentry:
+        if beacon.date:
+            beacon_info["exited"] = eentry.timestamp
 
-    matches = re.findall(pattern_metadata, entry.content)
-    if len(matches) == 9:
-        update_beacon(id, {
-            Beacon.ip_ext: ''.join(matches[0]), 
-            Beacon.hostname: ''.join(matches[2]), 
-            Beacon.user: ''.join(matches[3]),
-            Beacon.process: ''.join(matches[4]),
-            Beacon.pid: ''.join(matches[5])
-            })
-
-
-def analyze(e):
-    beacons = get_all_elements("Beacon")
-    tasks = []
-    for beacon in beacons:
-        tasks.append(e.submit(fill_beacon_info, beacon.id))
-        tasks.append(e.submit(analyze_entries, beacon))
-        
-    for task in tasks:
-        if task.exception():
-            log(task.exception(), "e")
+    if beacon_info:
+        update_element(Beacon, id=beacon.id, **beacon_info)
 
 
 if __name__ == "__main__":
     start = time.time()
+    curr_path = os.path.dirname(os.path.abspath(__file__))
 
-    parser = argparse.ArgumentParser(description='Obfuscate VBA code')
-    parser.add_argument('-w','--worker',type=int, default=1, help='Set amount of workers')
-    parser.add_argument('-f', '--folder', default="", help='Folder path to start to walking for files')
-    parser.add_argument('-db', '--database', default = "", help='Database path')
+    parser = argparse.ArgumentParser(description='parse CobaltStrike logs and store them in a DB to create reports')
+    parser.add_argument('-w','--worker',type=int, default=10, help='Set amount of workers')
+    parser.add_argument('-f', '--folder', default=curr_path, help='Folder path to start to walking for files')
+    parser.add_argument('-p', '--database-path', default= curr_path+r"\log.db", help='Database path')
     parser.add_argument('-r', '--redact', action='store_true', help='Redact sensitive values')
     parser.add_argument('-d', '--debug', action='store_true', help='Activate debugging')
-    parser.add_argument('-o', '--output', help='Output path for CSV')
+    parser.add_argument('-o', '--output', default= curr_path+r"\activity.csv", help='Output path for CSV')
     parser.add_argument('-m', '--minimize', help='Remove unnecessary data: keyloggs,beaconbot,sleep')
     args = parser.parse_args()
 
-    curr_path = os.path.dirname(os.path.abspath(__file__))
-    if args.database == "":
-        args.database =  curr_path + r"\log.db"
-    if args.folder == "":
-        args.folder = curr_path
-    if args.output == None:
-        args.output = curr_path + r"\activity.csv"
+    """TODO
+    Reports:
+    input - output
+    file upload - download
+    """
     if args.debug:
         args.worker = 1
     
-    init_db(args.database, args.debug)
+    init_db(args.database_path, args.debug)
+    
     log_files = get_all_files(args.folder, ".log", "beacon")
-    ad_files = get_all_files(args.folder, ".log", "downloads")
     ev_files = get_all_files(args.folder, ".log", "events")
+    dl_files = get_all_files(args.folder, ".log", "downloads")
 
     with futures.ThreadPoolExecutor(max_workers=args.worker) as e:
-        tasks = []
-        # for file in log_files:
-        #     tasks.append(e.submit(parse_log_file, file))
-        for file in ad_files:
-            tasks.append(e.submit(parse_log_file, file))
-        for file in ev_files:
-            tasks.append(e.submit(parse_log_file, file))
-        futures.wait(tasks, timeout=None, return_when=futures.ALL_COMPLETED)
+        # create all beacons
+        # result_futures = list(map(lambda file: e.submit(create_all_beacons, file), log_files))
+        # for idx, future in enumerate(futures.as_completed(result_futures)):
+        #     printProgressBar(idx, len(log_files), "Creating Beacons")
+        # #futures.wait(result_futures, timeout=None, return_when=futures.ALL_COMPLETED)
+        
+        # result_futures = list(map(lambda file: e.submit(parse_log_file, file), log_files))
+        # result_futures += list(map(lambda file: e.submit(parse_log_file, file), ev_files))
+        # result_futures += list(map(lambda file: e.submit(parse_log_file, file), dl_files))
+        # for idx, future in enumerate(futures.as_completed(result_futures)):
+            # printProgressBar(idx, len(log_files)+len(ev_files)+len(dl_files), "Process logs")
 
-        analyze(e)
-        futures.wait(tasks, timeout=None, return_when=futures.ALL_COMPLETED)
+        beacons = get_all_elements(Beacon)
+        result_futures = list(map(lambda beacon: e.submit(fill_beacon_info, beacon), beacons))
+        result_futures += list(map(lambda beacon: e.submit(analyze_entries, beacon), beacons))
+        for idx, future in enumerate(futures.as_completed(result_futures)):
+            printProgressBar(idx, len(beacons), "Analyzing logs")
 
     if args.output:
         entries = get_all_entries_filtered(filter=EntryType.input)

@@ -6,7 +6,8 @@ import sqlalchemy
 from sqlalchemy.future import select
 from sqlalchemy.future.engine import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import exc, update, delete, or_, and_
+from sqlalchemy import exc, update, delete, text
+from sqlalchemy.sql.expression import bindparam
 
 from sqlite_model import *
 from utils import log
@@ -31,7 +32,6 @@ def get_element_by_id(cls, id):
     session = SESSION()
     record = None
     try:
-        cls = getattr(sys.modules[__name__], cls)
         records = session.execute(select(cls).where(cls.id == id))
         record = records.scalars().first()
     except Exception as ex:
@@ -46,26 +46,24 @@ def get_all_elements(cls):
     session = SESSION()
     rec =[]
     try:
-        cls = getattr(sys.modules[__name__], cls)
         records = session.execute(select(cls))
-        for record in records.scalars():
+        for record in records.unique().scalars():
             rec.append(record)
+
+        return rec
     except Exception as ex:
         log(f"get_all_elements() Failed: {ex}", "e")
     finally:
         session.close()
 
-    return rec
 
-
-def update_element(cls, id, values):
+def update_element(cls, **kwargs):
     session = SESSION()
     try:
-        cls = getattr(sys.modules[__name__], cls)
         session.execute(
             update(cls).
-            where(cls.id == id).
-            values(values)
+            where(cls.id == kwargs["id"]).
+            values(kwargs)
             )
         session.commit()
     except exc.IntegrityError:
@@ -75,13 +73,12 @@ def update_element(cls, id, values):
     finally:
         session.close()
 
-    return get_element_by_id(cls, id)
+    return get_element_by_id(cls, kwargs["id"])
 
 
 def delete_element(cls, id):
     session = SESSION()
     try:
-        cls = getattr(sys.modules[__name__], cls)
         session.execute(delete(cls).where(cls.id == id))
         session.commit()
     except Exception as ex:
@@ -90,22 +87,24 @@ def delete_element(cls, id):
         session.close()
 
 
-def get_element_by_values(cls, values):
+def get_element_by_values(cls, **kwargs):
     """
-    Get row of type CLS (generic) with ID id
+    Get one element of type CLS (generic) where values match
     """
     session = SESSION()
     record = None
+    bindTo = []
     try:
-        # {
-        # Entry.timestamp :row['timestamp'], 
-        # Entry.timezone : row["timezone"],
-        # Entry.type : row['type'],
-        # Entry.content : row['content'],
-        # Entry.parent_id : record.id
-        # }
-        cls = getattr(sys.modules[__name__], cls)
-        records = session.execute(f"SELECT * FROM "+cls)
+        #remove them because they cant be searched ..
+        kwargs.pop('joined', None)
+        kwargs.pop('exited', None)
+
+        for key, value in kwargs.items():
+            bindTo.append(f"{ str(key) }=:{ str(key) }")
+
+        qry = str(" and ".join(bindTo))
+        query = f"SELECT * FROM {cls.__tablename__} WHERE {qry}"
+        records = session.execute(text(query).bindparams(**kwargs))
         record = records.scalars().first()
     except Exception as ex:
         log(f"get_element_by_values() Failed: {ex}", "e")
@@ -115,59 +114,59 @@ def get_element_by_values(cls, values):
     return record
 
 
+def create_element(cls, **kwargs):
+    session = SESSION()
+    try:
+        elem = get_element_by_values(cls, **kwargs)
+        if elem:
+            return elem
+
+        # if beacon is unknown drop id so it auto generates one
+        if "id" in kwargs and kwargs["id"] == '':
+            kwargs.pop("id")
+
+        record = cls()
+        for k, v in kwargs.items():
+            setattr(record, k, v)
+
+        session.add(record)
+        session.commit()
+        return record.id
+    except exc.IntegrityError:
+        elem = get_element_by_id(cls, kwargs["id"])
+        return elem.id
+    except Exception as ex:
+        log(f"create_element({cls}) Failed: {ex}", "e")
+    finally:
+        session.close()
+
 # =========================
 # =========BEACONS=========
 # =========================
-def get_beacon_by_ip(ip):
+def get_last_entry_of_beacon(id):
     session = SESSION()
     record = None
     try:
-        records: Beacon = session.execute(select(Beacon).where(Beacon.ip == ip))
+        records: Entry = session.execute(select(Entry).where(Entry.parent_id == id ).order_by(Entry.timestamp.desc()))
+        return records.scalars().first()
+    except Exception as ex:
+        log(f"get_last_entry_of_beacon() Failed: {ex}", "e")
+    finally:
+        session.close()
+
+
+def get_first_metadata_entry_of_beacon(id):
+    session = SESSION()
+    record = None
+    try:
+        records: Entry = session.execute(select(Entry).where(Entry.parent_id == id ).where(Entry.type == EntryType.metadata))
         record = records.scalars().first()
+        return record
     except Exception as ex:
-        log(f"get_beacon_by_ip() Failed: {ex}", "e")
+        log(f"get_first_metadata_entry_of_beacon() Failed: {ex}", "e")
     finally:
         session.close()
 
-    return record
-
-
-def create_beacon(ip, hostname=None):
-    session = SESSION()
-    try:
-        record: Beacon = Beacon(
-            ip = ip,
-            hostname = hostname,
-        )
-        session.add(record)
-        session.commit()
-    except exc.IntegrityError:
-        pass
-    except Exception as ex:
-        log(f"create_beacon() Failed: {ex}", "e")
-    finally:
-        session.close()
-
-    return get_beacon_by_ip(ip)
-
-
-def update_beacon(id, values):
-    session = SESSION()
-    try:
-        session.execute(
-            update(Beacon).
-            where(Beacon.id == id).
-            values(values)
-            )
-        session.commit()
-    except exc.IntegrityError:
-        pass
-    except Exception as ex:
-        log(f"update_beacon() Failed: {ex}", "e")
-    finally:
-        session.close()
-
-    return get_element_by_id("Beacon", id)
 
 # =========================
 # ==========ENTRY==========
@@ -191,39 +190,6 @@ def get_entry_by_param(timestamp, timezone, type, content):
     return record
 
 
-def create_entry(timestamp, timezone, type, content, parent_id):
-    """
-    id = Column(Integer, primary_key = True)
-    timestamp = Column(DateTime, unique=False, nullable=False)
-    timezone = Column(String)
-    type = Column(Enum(EntryType))
-    content = Column(String, unique=False, nullable=False)
-    parent_id = Column(Integer, ForeignKey('beacon.id'))
-    """
-    session = SESSION()
-    res = []
-    try:
-        res = get_entry_by_param(timestamp, timezone, type, content)
-        if res:
-            return res 
-
-        record: Entry = Entry(
-            timestamp = timestamp,
-            timezone = timezone,
-            type = type,
-            content = content,
-            parent_id = parent_id,
-        )
-        session.add(record)
-        session.commit()
-    except Exception as ex:
-        log(f"create_entry() Failed: {ex}", "e")
-    finally:
-        session.close()
-
-    return get_entry_by_param(timestamp, timezone, type, content)
-
-
 def get_all_entries_filtered(filter: EntryType) -> List:
     session = SESSION()
     rec = []
@@ -238,18 +204,3 @@ def get_all_entries_filtered(filter: EntryType) -> List:
         session.close()
 
     return rec
-
-
-def get_first_metadata_entry_of_beacon(id):
-    session = SESSION()
-    record = None
-    try:
-        records: Entry = session.execute(select(Entry).where(Entry.parent_id == id ).where(Entry.type == EntryType.metadata))
-        record = records.scalars().first()
-    except Exception as ex:
-        log(f"get_first_metadata_entry_of_beacon() Failed: {ex}", "e")
-    finally:
-        session.close()
-
-    return record
-

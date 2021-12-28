@@ -5,11 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Aktuelle Datei",
+            "name": "Python: Dbg",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "args":["-w 1"]
+        },
+        {
+            "name": "Python: MultiThread",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/gimmelogs.py",
+            "console": "integratedTerminal",
+            "args": ["-w 16"]
         }
     ]
 }

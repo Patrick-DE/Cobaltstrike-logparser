@@ -27,15 +27,22 @@ class Beacon(Base):
       """
       __tablename__ = "beacon"
       id = Column(Integer, primary_key= True)
-      ip = Column(String, unique=True)
+      ip = Column(String, unique=False)
       ip_ext = Column(String, nullable=True)
       hostname = Column(String, nullable=True)
       user =  Column(String, nullable=True)
       process = Column(String, nullable=True)
       pid = Column(Integer, nullable=True)
+      date = Column(String, nullable=False)
       joined = Column(DateTime, nullable=True)
       exited = Column(DateTime, nullable=True)
       entries = relationship("Entry", back_populates="parent",lazy='joined', join_depth=1)
+
+      def is_high_integrity(self):
+            if "*" in self.user:
+                  return True
+            else:
+                  return False
       
 class Entry(Base):
       """
