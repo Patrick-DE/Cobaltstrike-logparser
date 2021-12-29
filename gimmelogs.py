@@ -25,7 +25,7 @@ def parse_beacon_metadata(line, date=None):
         return {}
     
     if date:
-        date = datetime.strptime(date + " " + entry["timestamp"].split(' ')[1], '%y%m%d %H:%M:%S')
+        new_date = datetime.strptime(date + " " + entry["timestamp"].split(' ')[1], '%y%m%d %H:%M:%S')
 
     matches = re.findall(pattern_metadata, entry["content"])
     if len(matches) == 9:
@@ -35,7 +35,7 @@ def parse_beacon_metadata(line, date=None):
             "user":''.join(matches[3]),
             "process":''.join(matches[4]),
             "pid":''.join(matches[5]),
-            "joined":date
+            "joined":new_date
         }
     else:
         #log(f"parse_beacon_metadata(): Did not detect metadata: {line}", "w")
@@ -96,11 +96,11 @@ def build_entry(row, logtype, date, matches):
     elif logtype == "download":
         row['type'] = logtype
         row['content'] = f"{matches['path']}\{matches['fname']}"
-        row['parent_id'] = create_element(Beacon, ip=matches["ipv4"])
+        row['parent_id'] = create_element(Beacon, ip=matches["ipv4"], joined=row["timestamp"], date=date)
     elif logtype == "events":
         row['type'] = logtype
         row['content'] = matches["content"]
-        row['parent_id'] = create_element(Beacon, ip=matches["ipv4"], user=matches["user"], hostname=matches["hostname"], joined=matches["timestamp"])
+        row['parent_id'] = create_element(Beacon, ip=matches["ipv4"], user=matches["user"], date=date, hostname=matches["hostname"], joined=row["timestamp"])
     else:
         log(f"build_entry() Failed: Logtype not supported", "e")
     return row
@@ -182,7 +182,7 @@ def fill_beacon_info(beacon):
     beacon_info: Dict = {}
     mentry = get_first_metadata_entry_of_beacon(beacon.id)
     if not beacon.hostname and mentry:
-        beacon_info = parse_beacon_metadata(mentry["content"], beacon["date"])
+        beacon_info = parse_beacon_metadata(mentry.content, beacon.date)
     
     eentry = get_last_entry_of_beacon(beacon.id)
     if not beacon.exited and eentry:
@@ -192,6 +192,24 @@ def fill_beacon_info(beacon):
     if beacon_info:
         update_element(Beacon, id=beacon.id, **beacon_info)
 
+
+def reporting(args):
+    # input report
+    entries = get_all_entries_filtered(filter=EntryType.input)
+    rows = []
+    for entry in entries:
+        rows.append(entry.to_row())
+    header = ["Date", "Time", "Hostname", "Command", "User", "IP"]
+    write_to_csv(args.output, header, rows)
+
+    # get download and upload report
+    entries = get_all_entries_filtered(filter=EntryType.download)
+    entries = entries + get_all_entries_filtered(filter=EntryType.upload)
+    rows = []
+    for entry in entries:
+        rows.append(entry.to_row())
+    header = ["Date", "Time", "Hostname", "Command", "User", "IP"]
+    write_to_csv("activity_dl.csv", header, rows)
 
 if __name__ == "__main__":
     start = time.time()
@@ -241,21 +259,6 @@ if __name__ == "__main__":
             printProgressBar(idx, len(result_futures), "Analyzing logs")
 
     if args.output:
-        # input report
-        entries = get_all_entries_filtered(filter=EntryType.input)
-        rows = []
-        for entry in entries:
-            rows.append(entry.to_row())
-        header = ["Date", "Time", "Hostname", "Command", "User", "IP"]
-        write_to_csv(args.output, header, rows)
-
-        # get download and upload report
-        entries = get_all_entries_filtered(filter=EntryType.download)
-        entries =+ get_all_entries_filtered(filter=EntryType.upload)
-        rows = []
-        for entry in entries:
-            rows.append(entry.to_row())
-        header = ["Date", "Time", "Hostname", "Command", "User", "IP"]
-        write_to_csv("activity_dl.csv", header, rows)
+        reporting(args)
 
     print (time.time() - start)

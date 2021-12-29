@@ -73,8 +73,10 @@ class Entry(Base):
 
       def to_row(self):
             if self.type == EntryType.input:
-                  input = self.get_input()
-                  date = self.timestamp.strftime("%d/%m/%y")
-                  time = self.timestamp.strftime("%H:%M")
-                  b = self.parent
-                  return [date, time, b.hostname, input, b.user, b.ip]
+                  content = self.get_input()
+            else:
+                  content = self.content
+            date = self.timestamp.strftime("%d/%m/%y")
+            time = self.timestamp.strftime("%H:%M")
+            b = self.parent
+            return [date, time, b.hostname, content, b.user, b.ip]
