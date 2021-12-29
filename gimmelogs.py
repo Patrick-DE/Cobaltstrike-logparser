@@ -1,3 +1,4 @@
+from os import path
 import time
 from utils import *
 from sqlite_func import *
@@ -100,14 +101,14 @@ def build_entry(row, logtype, date, matches):
     elif logtype == "download":
         # exclude test ips
         if is_ip_in_ranges(matches["ipv4"], gExclude):
-            return
+            return row
         row['type'] = logtype
         row['content'] = f"{matches['path']}\{matches['fname']}"
         row['parent_id'] = create_element(Beacon, ip=matches["ipv4"], joined=row["timestamp"], date=date)
     elif logtype == "events":
         # exclude test ips
         if is_ip_in_ranges(matches["ipv4"], gExclude):
-            return
+            return row
         row['type'] = logtype
         row['content'] = matches["content"]
         row['parent_id'] = create_element(Beacon, ip=matches["ipv4"], user=matches["user"], date=date, hostname=matches["hostname"], joined=row["timestamp"])
@@ -181,7 +182,6 @@ def analyze_entries(beacon):
     - remove_clutter
     - redact
     - excel_save"""
-    remove_clutter()
     for entry in beacon.entries:
         redact(entry)
         excel_save(entry)
@@ -206,7 +206,7 @@ def fill_beacon_info(beacon):
 def sort_on_timestamp(elem: Entry):
     return elem.timestamp
 
-def reporting(args):
+def report_input_task(o):
     # input report
     entries = get_all_entries_filtered(filter=EntryType.input)
     entries = entries + get_all_entries_filtered(filter=EntryType.task)
@@ -215,8 +215,9 @@ def reporting(args):
     for entry in entries:
         rows.append(entry.to_row())
     header = ["Date", "Time", "Hostname", "Command", "User", "IP"]
-    write_to_csv(args.output, header, rows)
+    write_to_csv(o+"\\activity-report.csv", header, rows)
 
+def report_dl_ul(o):
     # get download and upload report
     entries = get_all_entries_filtered(filter=EntryType.download)
     entries = entries + get_all_entries_filtered(filter=EntryType.upload)
@@ -225,61 +226,80 @@ def reporting(args):
     for entry in entries:
         rows.append(entry.to_row())
     header = ["Date", "Time", "Hostname", "File", "User", "IP"]
-    write_to_csv("activity_dl.csv", header, rows)
+    write_to_csv(o+"\\dl-ul-report.csv", header, rows)
+
 
 def run(args):
     global gExclude
     start = time.time()
 
-    if args.exclude_path:
-        try:
-            gExclude = read_file(args.exclude_path).split("\n")
-        except:
-            log("Please ensure your exception file has the correct format!", "e")
+    if args.exclude:
+        gExclude = read_file(args.exclude).split("\n")
 
-    init_db(args.database_path, args.debug)
+    init_db(args.database, args.verbose)
 
-    log_files = get_all_files(args.folder, ".log", "beacon")
-    ev_files = get_all_files(args.folder, ".log", "events")
-    dl_files = get_all_files(args.folder, ".log", "downloads")
+    if args.path:
+        log_files = get_all_files(args.path, ".log", "beacon")
+        ev_files = get_all_files(args.path, ".log", "events")
+        dl_files = get_all_files(args.path, ".log", "downloads")
 
-    with futures.ThreadPoolExecutor(max_workers=args.worker) as e:
-        ##create all beacons
-        result_futures = list(map(lambda file: e.submit(create_all_beacons, file), log_files))
-        for idx, future in enumerate(futures.as_completed(result_futures)):
-            printProgressBar(idx, len(result_futures), "Creating Beacons")
-        ##futures.wait(result_futures, timeout=None, return_when=futures.ALL_COMPLETED)
-        
-        result_futures = list(map(lambda file: e.submit(parse_log_file, file), log_files))
-        result_futures += list(map(lambda file: e.submit(parse_log_file, file), ev_files))
-        result_futures += list(map(lambda file: e.submit(parse_log_file, file), dl_files))
-        for idx, future in enumerate(futures.as_completed(result_futures)):
-            printProgressBar(idx, len(result_futures), "Process logs")
+        with futures.ThreadPoolExecutor(max_workers=args.worker) as e:
+            ##create all beacons
+            result_futures = list(map(lambda file: e.submit(create_all_beacons, file), log_files))
+            for idx, future in enumerate(futures.as_completed(result_futures)):
+                printProgressBar(idx, len(result_futures), "Creating Beacons")
+            ##futures.wait(result_futures, timeout=None, return_when=futures.ALL_COMPLETED)
+            
+            result_futures = list(map(lambda file: e.submit(parse_log_file, file), log_files))
+            result_futures += list(map(lambda file: e.submit(parse_log_file, file), ev_files))
+            result_futures += list(map(lambda file: e.submit(parse_log_file, file), dl_files))
+            for idx, future in enumerate(futures.as_completed(result_futures)):
+                printProgressBar(idx, len(result_futures), "Process logs")
 
-        beacons = get_all_elements(Beacon)
-        result_futures = list(map(lambda beacon: e.submit(fill_beacon_info, beacon), beacons))
-        result_futures += list(map(lambda beacon: e.submit(analyze_entries, beacon), beacons))
-        for idx, future in enumerate(futures.as_completed(result_futures)):
-            printProgressBar(idx, len(result_futures), "Analyzing logs")
+            beacons = get_all_elements(Beacon)
+            result_futures = list(map(lambda beacon: e.submit(fill_beacon_info, beacon), beacons))
+            result_futures += list(map(lambda beacon: e.submit(analyze_entries, beacon), beacons))
+            for idx, future in enumerate(futures.as_completed(result_futures)):
+                printProgressBar(idx, len(result_futures), "Analyzing logs")
+
+    if args.minimize:
+        remove_clutter()
 
     if args.output:
-        reporting(args)
+        report_input_task(args.output)
+        report_dl_ul(args.output)
 
     print (time.time() - start)
 
+
+class ValidatePath(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        npath = path.abspath(values.strip())
+        if not npath:
+            return
+        
+        if not path.isdir(npath) and not path.isfile(npath):
+            log(f"Please choose a valid path for {self.dest}!", "e")
+            exit(-1)
+
+        setattr(namespace, self.dest, npath)
+
+
 if __name__ == "__main__":
-    curr_path = os.path.dirname(os.path.abspath(__file__))
+    curr_path = path.dirname(path.abspath(__file__))
 
     parser = argparse.ArgumentParser(description='parse CobaltStrike logs and store them in a DB to create reports')
-    parser.add_argument('-w','--worker',type=int, default=10, help='Set amount of workers')
-    parser.add_argument('-f', '--folder', default=curr_path, help='Folder path to start to walking for files')
-    parser.add_argument('-dp', '--database-path', default= curr_path+r"\log.db", help='Database path')
-    parser.add_argument('-r', '--redact', action='store_true', help='Redact sensitive values')
-    parser.add_argument('-d', '--debug', action='store_true', help='Activate debugging')
-    parser.add_argument('-o', '--output', default="", help='Output path for CSV')
-    parser.add_argument('-m', '--minimize', help='Remove unnecessary data: keyloggs,beaconbot,sleep')
-    parser.add_argument('-e', '--exclude-path', help='A file with one IP-Range per line which should be ignored')
+    parser.add_argument('-w','--worker',type=int, default=10, help='Set amount of workers: default=10')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Activate debugging')
+    parser.add_argument('-p', '--path', action=ValidatePath, help='Directory path to start from generating the DB')
+    parser.add_argument('-d', '--database', action=ValidatePath, default= curr_path+"\\log.db", help='Database path: default=./log.db')
+    parser.add_argument('-o', '--output', action=ValidatePath, help='Output path for CSV')
+    parser.add_argument('-m', '--minimize', action='store_true', help='Remove unnecessary data: keyloggs,beaconbot,sleep,exit,clear')
+    parser.add_argument('-e', '--exclude', action=ValidatePath, help='A file with one IP-Range per line which should be ignored')
     args = parser.parse_args()
+
+    if not args.path and not args.output:
+        log("Please select either:\n-g for generating the database\n-o for generating the reports (required at least -g once before)", "e")
 
     """TODO
     Reports:
@@ -287,7 +307,7 @@ if __name__ == "__main__":
     input - output
     file upload - download -> need to change type of upload tasks to upload
     """
-    if args.debug:
+    if args.verbose:
         args.worker = 1
 
     run(args)

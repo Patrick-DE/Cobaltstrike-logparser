@@ -16,7 +16,10 @@ SESSION = None
 
 def init_db(db_path, debug):
     global SESSION
-    engine = create_engine("sqlite:///"+db_path,echo=debug)
+    try:
+        engine = create_engine("sqlite:///"+db_path,echo=debug)
+    except Exception as ex:
+        log(f"Please provide a valid DB path: {ex}", "e")
 
     SESSION = sessionmaker(engine)
     Base.metadata.create_all(engine)

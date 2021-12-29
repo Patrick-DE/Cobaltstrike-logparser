@@ -5,12 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Dbg",
+            "name": "Python: Dbg-GenDB",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args":["-w 1", "-o activity.csv", "-e exclude.txt"]
+            "args":["-w 1", "-p ./", "-o ./", "-e exclude.txt", "-m"]
+        },
+        {
+            "name": "Python: Dbg-Report",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/gimmelogs.py",
+            "console": "integratedTerminal",
+            "args":["-w 1", "-o ./", "-e exclude.txt", "-m"]
         },
         {
             "name": "Python: MultiThread",
@@ -18,7 +26,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args": ["-w 16"]
+            "args": ["-w 16", "-g ./", "-o ./", "-e exclude.txt", "-m"]
         }
     ]
 }
