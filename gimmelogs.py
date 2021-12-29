@@ -10,7 +10,7 @@ pattern_line = pattern_time + r"\[(?P<type>\w+)\](?P<content>.*)"
 pattern_ipv4 = r"(?P<ipv4>\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b)"
 pattern_date = r"\\(?P<date>\d{6})\\"
 pattern_metadata = pattern_ipv4 + r"|(?:\w+:\s(.*?);)|(?P<beacon>\w+_\d+)"
-pattern_download = pattern_time + pattern_ipv4 + r"\s\d+\s\d+\s.*?\s(?P<fname>.*)\s(?P<path>\b.*\b)"
+pattern_download = pattern_time + pattern_ipv4 + r"\s\d+\s\d+\s.*?\s(?P<fname>.*)\t(?P<path>\b.*\b)"
 pattern_events = pattern_time + r"(?P<content>.*?from\s(?P<user>\b.*\b\s*.*?)@"+ pattern_ipv4 +"\s\((?P<hostname>.*?)\))"
 
 
@@ -208,8 +208,9 @@ def reporting(args):
     rows = []
     for entry in entries:
         rows.append(entry.to_row())
-    header = ["Date", "Time", "Hostname", "Command", "User", "IP"]
+    header = ["Date", "Time", "Hostname", "File", "User", "IP"]
     write_to_csv("activity_dl.csv", header, rows)
+
 
 if __name__ == "__main__":
     start = time.time()
@@ -227,8 +228,9 @@ if __name__ == "__main__":
 
     """TODO
     Reports:
+    input -> done
     input - output
-    file upload - download
+    file upload - download -> need to change type of upload tasks to upload + download stuff is double in the DB -_-
     """
     if args.debug:
         args.worker = 1
@@ -241,24 +243,24 @@ if __name__ == "__main__":
 
     with futures.ThreadPoolExecutor(max_workers=args.worker) as e:
         # create all beacons
-        result_futures = list(map(lambda file: e.submit(create_all_beacons, file), log_files))
-        for idx, future in enumerate(futures.as_completed(result_futures)):
-            printProgressBar(idx, len(result_futures), "Creating Beacons")
-        ##futures.wait(result_futures, timeout=None, return_when=futures.ALL_COMPLETED)
+        # result_futures = list(map(lambda file: e.submit(create_all_beacons, file), log_files))
+        # for idx, future in enumerate(futures.as_completed(result_futures)):
+        #     printProgressBar(idx, len(result_futures), "Creating Beacons")
+        # ##futures.wait(result_futures, timeout=None, return_when=futures.ALL_COMPLETED)
         
-        result_futures = list(map(lambda file: e.submit(parse_log_file, file), log_files))
-        result_futures += list(map(lambda file: e.submit(parse_log_file, file), ev_files))
-        result_futures += list(map(lambda file: e.submit(parse_log_file, file), dl_files))
+        # result_futures = list(map(lambda file: e.submit(parse_log_file, file), log_files))
+        # result_futures += list(map(lambda file: e.submit(parse_log_file, file), ev_files))
+        result_futures = list(map(lambda file: e.submit(parse_log_file, file), dl_files))
         for idx, future in enumerate(futures.as_completed(result_futures)):
             printProgressBar(idx, len(result_futures), "Process logs")
 
-        beacons = get_all_elements(Beacon)
-        result_futures = list(map(lambda beacon: e.submit(fill_beacon_info, beacon), beacons))
-        result_futures += list(map(lambda beacon: e.submit(analyze_entries, beacon), beacons))
-        for idx, future in enumerate(futures.as_completed(result_futures)):
-            printProgressBar(idx, len(result_futures), "Analyzing logs")
+        # beacons = get_all_elements(Beacon)
+        # result_futures = list(map(lambda beacon: e.submit(fill_beacon_info, beacon), beacons))
+        # result_futures += list(map(lambda beacon: e.submit(analyze_entries, beacon), beacons))
+        # for idx, future in enumerate(futures.as_completed(result_futures)):
+        #     printProgressBar(idx, len(result_futures), "Analyzing logs")
 
-    if args.output:
-        reporting(args)
+    # if args.output:
+        # reporting(args)
 
     print (time.time() - start)

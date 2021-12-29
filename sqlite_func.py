@@ -33,13 +33,12 @@ def get_element_by_id(cls, id):
     record = None
     try:
         records = session.execute(select(cls).where(cls.id == id))
-        record = records.scalars().first()
+        results = records.scalars().first()
+        return results
     except Exception as ex:
         log(f"get_element_by_id() Failed: {ex}", "e")
     finally:
         session.close()
-
-    return record
 
 
 def get_all_elements(cls):
@@ -47,10 +46,8 @@ def get_all_elements(cls):
     rec =[]
     try:
         records = session.execute(select(cls))
-        for record in records.unique().scalars():
-            rec.append(record)
-
-        return rec
+        results = records.unique().scalars().fetchall()
+        return results
     except Exception as ex:
         log(f"get_all_elements() Failed: {ex}", "e")
     finally:
@@ -92,12 +89,11 @@ def get_element_by_values(cls, **kwargs):
     Get one element of type CLS (generic) where values match
     """
     session = SESSION()
-    record = None
     bindTo = []
     try:
         #remove them because they cant be searched ..
-        kwargs.pop('joined', None)
-        kwargs.pop('exited', None)
+        #kwargs.pop('joined', None)
+        #kwargs.pop('exited', None)
 
         for key, value in kwargs.items():
             bindTo.append(f"{ str(key) }=:{ str(key) }")
@@ -105,22 +101,21 @@ def get_element_by_values(cls, **kwargs):
         qry = str(" and ".join(bindTo))
         query = f"SELECT * FROM {cls.__tablename__} WHERE {qry}"
         records = session.execute(text(query).bindparams(**kwargs))
-        record = records.scalars().first()
+        result = records.scalar()
+        return result
     except Exception as ex:
         log(f"get_element_by_values() Failed: {ex}", "e")
     finally:
         session.close()
 
-    return record
-
 
 def create_element(cls, **kwargs):
+    elem = get_element_by_values(cls, **kwargs)
+    if elem:
+        return elem
+
     session = SESSION()
     try:
-        elem = get_element_by_values(cls, **kwargs)
-        if elem:
-            return elem
-
         # if beacon is unknown drop id so it auto generates one
         if "id" in kwargs and kwargs["id"] == '':
             kwargs.pop("id")
@@ -157,11 +152,10 @@ def get_last_entry_of_beacon(id):
 
 def get_first_metadata_entry_of_beacon(id):
     session = SESSION()
-    record = None
     try:
         records: Entry = session.execute(select(Entry).where(Entry.parent_id == id ).where(Entry.type == EntryType.metadata))
-        record = records.scalars().first()
-        return record
+        result = records.scalars().first()
+        return result
     except Exception as ex:
         log(f"get_first_metadata_entry_of_beacon() Failed: {ex}", "e")
     finally:
@@ -192,14 +186,10 @@ def get_entry_by_param(timestamp, timezone, type, content):
 
 def get_all_entries_filtered(filter: EntryType) -> List:
     session = SESSION()
-    rec = []
     try:
         records: Entry = session.execute(select(Entry).where(Entry.type == filter).order_by(Entry.timestamp.asc()))
-        
-        for record in records.unique().scalars():
-            rec.append(record)
-
-        return rec
+        result = records.unique().scalars().fetchall()
+        return result
     except Exception as ex:
         log(f"get_all_entries() Failed: {ex}", "e")
     finally:
@@ -230,10 +220,23 @@ def remove_clutter():
             ))
         entries1.delete(synchronize_session=False)
         session.commit()
-        
     except Exception as ex:
         log(f"get_all_entries() Failed: {ex}", "e")
     finally:
         session.close()
 
     
+def compare_dates():
+    """
+    Get one element of type CLS (generic) where values match
+    """
+    session = SESSION()
+    try:
+        date = datetime.strptime("211124 09:49:52", '%y%m%d %H:%M:%S')
+        records: sqlalchemy.engine.result.ChunkedIteratorResult = session.execute(select(Entry).where(Entry.type == EntryType.download).where(Entry.timestamp == date))
+        results = records.unique().scalars().fetchall()
+        return results
+    except Exception as ex:
+        log(f"get_element_by_values() Failed: {ex}", "e")
+    finally:
+        session.close()
