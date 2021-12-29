@@ -2,6 +2,7 @@ from argparse import FileType
 import enum
 import sys, os, csv
 from typing import List
+import ipaddress
 
 from sqlalchemy.sql.sqltypes import CHAR, Boolean, String
 
@@ -28,6 +29,7 @@ class LogType(enum.Enum):
     SUCCESS = 3
     INFO = 4
     
+
 def log(text: String, status: LogType=LogType.INFO) -> None:
     if status == LogType.ERROR:
         print(f"{bcolors.FAIL}[!!] {text} {bcolors.ENDC}")
@@ -40,9 +42,11 @@ def log(text: String, status: LogType=LogType.INFO) -> None:
     else:
         print(f"{text}")
 
+
 def store_to_file(filename: String, content: String) -> None:
     with open(filename, "w") as text_file:
         print(content, file=text_file)
+
 
 def write_to_csv(filename: String, header: List, rows: List) -> None:
     filename = os.path.abspath(filename.strip())
@@ -52,14 +56,27 @@ def write_to_csv(filename: String, header: List, rows: List) -> None:
         writer.writerow(header)
         writer.writerows(rows)
 
+
 def read_file(path: String) -> String:
     """path to file will be read as UTF-8 and throw an error + exit if not possible"""
     try:
-        with open(path, "r", encoding="utf-8") as f: s = f.read()
+        filename = os.path.abspath(path.strip())
+        with open(filename, "r", encoding="utf-8") as f: s = f.read()
     except Exception as ex:
         log(ex.filename + ": " + ex.strerror, "e")
         sys.exit(0)
     return s
+
+
+def is_ip_in_ranges(ip: String, ranges: List):
+    for range in ranges:
+        try:
+            if ipaddress.ip_address(ip) in ipaddress.ip_network(range):
+                return True
+        except Exception as ex:
+            log("is_ip_in_ranges failed: Please ensure that the IP-Range has the correct format: {ex}", "e")
+    return False
+
 
 def get_all_files(path: String, extension: String, prefix: String = "") -> List:
     list_of_files = []
@@ -68,6 +85,7 @@ def get_all_files(path: String, extension: String, prefix: String = "") -> List:
             if filename.endswith(extension) and filename.startswith(prefix): 
                 list_of_files.append(os.sep.join([dirpath, filename]))
     return list_of_files
+
 
 def yes_no(question: String) -> Boolean:
     answer = input(question + "(y/n/c): ").lower().strip()

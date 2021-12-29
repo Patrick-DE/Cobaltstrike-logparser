@@ -91,9 +91,8 @@ def get_element_by_values(cls, **kwargs):
     session = SESSION()
     bindTo = []
     try:
-        #remove them because they cant be searched ..
-        #kwargs.pop('joined', None)
-        #kwargs.pop('exited', None)
+        #remove externalIP because beacons can connect to beacons ..
+        kwargs.pop('ip_ext', None)
 
         for key, value in kwargs.items():
             bindTo.append(f"{ str(key) }=:{ str(key) }")
@@ -201,24 +200,27 @@ def remove_clutter():
     - keylogger output
     - sleep commands issues by the operator
     - BeaconBot responses
-    - Screenshot output"""
+    - Screenshot output
+    https://docs.sqlalchemy.org/en/14/core/expression_api.html"""
     session = SESSION()
     try:
-        entries = session.query(Entry).filter(Entry.type == EntryType.input).filter(
+        entries = session.query(Entry).filter(
             or_(
                 Entry.content.contains('> sleep'),
-                Entry.content.contains('> exit')
-            ))
-        entries.delete(synchronize_session=False)
-        
-        entries1 = session.query(Entry).filter(Entry.type == EntryType.output).filter(
-            or_(
+                Entry.content.contains('> exit'),
+                Entry.content.contains('beacon to exit'),
+                Entry.content.contains('beacon to sleep'),
+                Entry.content.contains('beacon to list'),
+                Entry.content.contains('to become interactive'),
+                Entry.content.contains('beacon queue'),
+                Entry.content.like('clear'),
+                Entry.content.like('jobs'),
                 Entry.content.contains('received keystrokes'),
                 Entry.content.contains('<BeaconBot>'),
                 Entry.content.contains('beacon is late'),
                 Entry.content.contains('received screenshot'),
             ))
-        entries1.delete(synchronize_session=False)
+        entries.delete(synchronize_session=False)
         session.commit()
     except Exception as ex:
         log(f"get_all_entries() Failed: {ex}", "e")

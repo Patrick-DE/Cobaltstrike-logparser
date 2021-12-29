@@ -67,16 +67,21 @@ class Entry(Base):
             return None
 
       def get_input(self):
-            if self.type == EntryType.input:
+            if self.type == EntryType.input or self.type == EntryType.task:
                   return re.sub(r"\s*<.*>\s*(.*)", r"\1", self.content)
-            return None
+            else:
+                  raise ValueError("This function can only be called with EntryType.input or EntryType.task")
 
       def to_row(self):
-            if self.type == EntryType.input:
+            hostname, user, ip = "","",""
+            if self.type == EntryType.input or self.type == EntryType.task:
                   content = self.get_input()
             else:
                   content = self.content
+
             date = self.timestamp.strftime("%d/%m/%y")
             time = self.timestamp.strftime("%H:%M")
             b = self.parent
-            return [date, time, b.hostname, content, b.user, b.ip]
+            if b:
+                  hostname, user, ip = b.hostname, b.user, b.ip
+            return [date, time, hostname, content, user, ip]

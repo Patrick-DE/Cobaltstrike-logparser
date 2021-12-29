@@ -12,6 +12,7 @@ pattern_date = r"\\(?P<date>\d{6})\\"
 pattern_metadata = pattern_ipv4 + r"|(?:\w+:\s(.*?);)|(?P<beacon>\w+_\d+)"
 pattern_download = pattern_time + pattern_ipv4 + r"\s\d+\s\d+\s.*?\s(?P<fname>.*)\t(?P<path>\b.*\b)"
 pattern_events = pattern_time + r"(?P<content>.*?from\s(?P<user>\b.*\b\s*.*?)@"+ pattern_ipv4 +"\s\((?P<hostname>.*?)\))"
+gExclude = []
 
 
 def parse_beacon_metadata(line, date=None):
@@ -46,7 +47,7 @@ def get_beacon_id(file):
     """Get the beacon id which is based on the beacon_xxxx.log files name"""
     filename = os.path.basename(file)
     return filename.split("_")[1].split(".")[0]
-    
+
 
 def create_all_beacons(file):
     """Stores all beacons detected via the event.log in the DB"""
@@ -58,6 +59,9 @@ def create_all_beacons(file):
     lip = re.findall(pattern_ipv4, file)
     if lip:
         lip = lip[0]
+        # exclude test ips
+        if is_ip_in_ranges(lip, gExclude):
+            return
     else:
         lip = "unknown"
 
@@ -94,10 +98,16 @@ def build_entry(row, logtype, date, matches):
         row['type'] = matches["type"]
         row['content'] = matches["content"]
     elif logtype == "download":
+        # exclude test ips
+        if is_ip_in_ranges(matches["ipv4"], gExclude):
+            return
         row['type'] = logtype
         row['content'] = f"{matches['path']}\{matches['fname']}"
         row['parent_id'] = create_element(Beacon, ip=matches["ipv4"], joined=row["timestamp"], date=date)
     elif logtype == "events":
+        # exclude test ips
+        if is_ip_in_ranges(matches["ipv4"], gExclude):
+            return
         row['type'] = logtype
         row['content'] = matches["content"]
         row['parent_id'] = create_element(Beacon, ip=matches["ipv4"], user=matches["user"], date=date, hostname=matches["hostname"], joined=row["timestamp"])
@@ -193,9 +203,14 @@ def fill_beacon_info(beacon):
         update_element(Beacon, id=beacon.id, **beacon_info)
 
 
+def sort_on_timestamp(elem: Entry):
+    return elem.timestamp
+
 def reporting(args):
     # input report
     entries = get_all_entries_filtered(filter=EntryType.input)
+    entries = entries + get_all_entries_filtered(filter=EntryType.task)
+    entries.sort(key=sort_on_timestamp)
     rows = []
     for entry in entries:
         rows.append(entry.to_row())
@@ -205,15 +220,54 @@ def reporting(args):
     # get download and upload report
     entries = get_all_entries_filtered(filter=EntryType.download)
     entries = entries + get_all_entries_filtered(filter=EntryType.upload)
+    entries.sort(key=sort_on_timestamp)
     rows = []
     for entry in entries:
         rows.append(entry.to_row())
     header = ["Date", "Time", "Hostname", "File", "User", "IP"]
     write_to_csv("activity_dl.csv", header, rows)
 
+def run(args):
+    global gExclude
+    start = time.time()
+
+    if args.exclude_path:
+        try:
+            gExclude = read_file(args.exclude_path).split("\n")
+        except:
+            log("Please ensure your exception file has the correct format!", "e")
+
+    init_db(args.database_path, args.debug)
+
+    log_files = get_all_files(args.folder, ".log", "beacon")
+    ev_files = get_all_files(args.folder, ".log", "events")
+    dl_files = get_all_files(args.folder, ".log", "downloads")
+
+    with futures.ThreadPoolExecutor(max_workers=args.worker) as e:
+        ##create all beacons
+        result_futures = list(map(lambda file: e.submit(create_all_beacons, file), log_files))
+        for idx, future in enumerate(futures.as_completed(result_futures)):
+            printProgressBar(idx, len(result_futures), "Creating Beacons")
+        ##futures.wait(result_futures, timeout=None, return_when=futures.ALL_COMPLETED)
+        
+        result_futures = list(map(lambda file: e.submit(parse_log_file, file), log_files))
+        result_futures += list(map(lambda file: e.submit(parse_log_file, file), ev_files))
+        result_futures += list(map(lambda file: e.submit(parse_log_file, file), dl_files))
+        for idx, future in enumerate(futures.as_completed(result_futures)):
+            printProgressBar(idx, len(result_futures), "Process logs")
+
+        beacons = get_all_elements(Beacon)
+        result_futures = list(map(lambda beacon: e.submit(fill_beacon_info, beacon), beacons))
+        result_futures += list(map(lambda beacon: e.submit(analyze_entries, beacon), beacons))
+        for idx, future in enumerate(futures.as_completed(result_futures)):
+            printProgressBar(idx, len(result_futures), "Analyzing logs")
+
+    if args.output:
+        reporting(args)
+
+    print (time.time() - start)
 
 if __name__ == "__main__":
-    start = time.time()
     curr_path = os.path.dirname(os.path.abspath(__file__))
 
     parser = argparse.ArgumentParser(description='parse CobaltStrike logs and store them in a DB to create reports')
@@ -224,43 +278,16 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--debug', action='store_true', help='Activate debugging')
     parser.add_argument('-o', '--output', default="", help='Output path for CSV')
     parser.add_argument('-m', '--minimize', help='Remove unnecessary data: keyloggs,beaconbot,sleep')
+    parser.add_argument('-e', '--exclude-path', help='A file with one IP-Range per line which should be ignored')
     args = parser.parse_args()
 
     """TODO
     Reports:
     input -> done
     input - output
-    file upload - download -> need to change type of upload tasks to upload + download stuff is double in the DB -_-
+    file upload - download -> need to change type of upload tasks to upload
     """
     if args.debug:
         args.worker = 1
-    
-    init_db(args.database_path, args.debug)
-    
-    log_files = get_all_files(args.folder, ".log", "beacon")
-    ev_files = get_all_files(args.folder, ".log", "events")
-    dl_files = get_all_files(args.folder, ".log", "downloads")
 
-    with futures.ThreadPoolExecutor(max_workers=args.worker) as e:
-        # create all beacons
-        # result_futures = list(map(lambda file: e.submit(create_all_beacons, file), log_files))
-        # for idx, future in enumerate(futures.as_completed(result_futures)):
-        #     printProgressBar(idx, len(result_futures), "Creating Beacons")
-        # ##futures.wait(result_futures, timeout=None, return_when=futures.ALL_COMPLETED)
-        
-        # result_futures = list(map(lambda file: e.submit(parse_log_file, file), log_files))
-        # result_futures += list(map(lambda file: e.submit(parse_log_file, file), ev_files))
-        result_futures = list(map(lambda file: e.submit(parse_log_file, file), dl_files))
-        for idx, future in enumerate(futures.as_completed(result_futures)):
-            printProgressBar(idx, len(result_futures), "Process logs")
-
-        # beacons = get_all_elements(Beacon)
-        # result_futures = list(map(lambda beacon: e.submit(fill_beacon_info, beacon), beacons))
-        # result_futures += list(map(lambda beacon: e.submit(analyze_entries, beacon), beacons))
-        # for idx, future in enumerate(futures.as_completed(result_futures)):
-        #     printProgressBar(idx, len(result_futures), "Analyzing logs")
-
-    # if args.output:
-        # reporting(args)
-
-    print (time.time() - start)
+    run(args)

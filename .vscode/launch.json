@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args":["-w 1", "-o activity.csv"]
+            "args":["-w 1", "-o activity.csv", "-e exclude.txt"]
         },
         {
             "name": "Python: MultiThread",
