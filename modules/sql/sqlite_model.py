@@ -43,7 +43,18 @@ class Beacon(Base):
                   return True
             else:
                   return False
+
+      def to_row(self):
+            return [self.hostname, \
+                  self.ip, \
+                  self.ip_ext, \
+                  self.user, \
+                  self.process, \
+                  self.pid, \
+                  self.joined, \
+                  self.exited]
       
+
 class Entry(Base):
       """
       Table definition for the SQLite DB

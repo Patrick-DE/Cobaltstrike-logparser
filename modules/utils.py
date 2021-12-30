@@ -74,7 +74,7 @@ def is_ip_in_ranges(ip: String, ranges: List):
             if ipaddress.ip_address(ip) in ipaddress.ip_network(range):
                 return True
         except Exception as ex:
-            log(f"is_ip_in_ranges failed: Please ensure that the IP-Range has the correct format: {ex}", "e")
+            return False
     return False
 
 

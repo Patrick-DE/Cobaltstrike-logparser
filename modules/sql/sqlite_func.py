@@ -1,16 +1,16 @@
 from datetime import datetime
 import time
-from typing import Dict, List, final
+from typing import Dict, List
 
 import sqlalchemy
 from sqlalchemy.future import select
 from sqlalchemy.future.engine import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import exc, update, delete, text, or_
-from sqlalchemy.sql.expression import bindparam
+from sqlalchemy import exc, update, delete, text, or_, and_
+from sqlalchemy.sql.elements import Null
 
-from sqlite_model import *
-from utils import log
+from modules.sql.sqlite_model import *
+from modules.utils import log
 
 SESSION = None
 
@@ -168,6 +168,42 @@ def get_first_metadata_entry_of_beacon(id):
         session.close()
 
 
+def get_all_incomplete_beacons():
+    session = SESSION()
+    try:
+        records: Entry = session.execute(
+            select(Beacon).filter(
+                or_(
+                    Beacon.hostname == None,
+                    Beacon.exited == None
+                )
+            )
+        )
+        result = records.unique().scalars().fetchall()
+        return result
+    except Exception as ex:
+        log(f"get_all_incomplete_beacons() Failed: {ex}", "e")
+    finally:
+        session.close()
+
+
+def get_all_complete_beacons():
+    session = SESSION()
+    try:
+        records: Entry = session.execute(
+            select(Beacon).filter(
+                and_(
+                    Beacon.hostname != None,
+                    Beacon.joined != None
+                )
+            )
+        )
+        result = records.unique().scalars().fetchall()
+        return result
+    except Exception as ex:
+        log(f"get_all_complete_beacons() Failed: {ex}", "e")
+    finally:
+        session.close()
 # =========================
 # ==========ENTRY==========
 # =========================
@@ -232,22 +268,6 @@ def remove_clutter():
         session.commit()
     except Exception as ex:
         log(f"get_all_entries() Failed: {ex}", "e")
-    finally:
-        session.close()
-
-
-def compare_dates():
-    """
-    Get one element of type CLS (generic) where values match
-    """
-    session = SESSION()
-    try:
-        date = datetime.strptime("211124 09:49:52", '%y%m%d %H:%M:%S')
-        records: sqlalchemy.engine.result.ChunkedIteratorResult = session.execute(select(Entry).where(Entry.type == EntryType.download).where(Entry.timestamp == date))
-        results = records.unique().scalars().fetchall()
-        return results
-    except Exception as ex:
-        log(f"get_element_by_values() Failed: {ex}", "e")
     finally:
         session.close()
 
