@@ -1,5 +1,5 @@
 from datetime import datetime
-import sys
+import time
 from typing import Dict, List, final
 
 import sqlalchemy
@@ -134,6 +134,10 @@ def create_element(cls, **kwargs):
         return elem.id
     except Exception as ex:
         log(f"create_element({cls}) Failed: {ex}", "e")
+    except sqlalchemy.sqlite3.OperationalError as ex:
+        log(f"create_element({cls}) Failed: Database busy! Retrying..{ex}", "w")
+        time.sleep(1)
+        create_element(cls, **kwargs)
     finally:
         session.close()
 
@@ -214,6 +218,7 @@ def remove_clutter():
                 Entry.content.contains('beacon to exit'),
                 Entry.content.contains('beacon to sleep'),
                 Entry.content.contains('beacon to list'),
+                Entry.content.contains('beacon to back'),
                 Entry.content.contains('to become interactive'),
                 Entry.content.contains('beacon queue'),
                 Entry.content.like('clear'),
@@ -230,7 +235,7 @@ def remove_clutter():
     finally:
         session.close()
 
-    
+
 def compare_dates():
     """
     Get one element of type CLS (generic) where values match
@@ -239,6 +244,28 @@ def compare_dates():
     try:
         date = datetime.strptime("211124 09:49:52", '%y%m%d %H:%M:%S')
         records: sqlalchemy.engine.result.ChunkedIteratorResult = session.execute(select(Entry).where(Entry.type == EntryType.download).where(Entry.timestamp == date))
+        results = records.unique().scalars().fetchall()
+        return results
+    except Exception as ex:
+        log(f"get_element_by_values() Failed: {ex}", "e")
+    finally:
+        session.close()
+
+
+def get_upload_entries():
+    """
+    Get one element of type CLS (generic) where values match
+    """
+    session = SESSION()
+    try:
+        records = session.execute(select(Entry).filter(
+            or_(
+                Entry.content.contains('Uploading beaconloader:'),
+                Entry.content.contains('Uploading payload file:'),
+                Entry.content.contains('Tasked beacon to upload'),
+                Entry.type == EntryType.indicator
+            )
+        ))
         results = records.unique().scalars().fetchall()
         return results
     except Exception as ex:

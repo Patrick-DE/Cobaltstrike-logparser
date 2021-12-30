@@ -220,7 +220,7 @@ def report_input_task(o):
 def report_dl_ul(o):
     # get download and upload report
     entries = get_all_entries_filtered(filter=EntryType.download)
-    entries = entries + get_all_entries_filtered(filter=EntryType.upload)
+    entries = entries + get_upload_entries()
     entries.sort(key=sort_on_timestamp)
     rows = []
     for entry in entries:
