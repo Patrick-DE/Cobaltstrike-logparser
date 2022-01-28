@@ -187,10 +187,10 @@ def get_all_incomplete_beacons():
         session.close()
 
 
-def get_all_complete_beacons():
+def get_all_valid_beacons() -> List[Beacon]:
     session = SESSION()
     try:
-        records: Entry = session.execute(
+        records: Beacon = session.execute(
             select(Beacon).filter(
                 and_(
                     Beacon.hostname != None,
@@ -226,14 +226,33 @@ def get_entry_by_param(timestamp, timezone, type, content):
     return record
 
 
-def get_all_entries_filtered(filter: EntryType) -> List:
+def get_all_entries_filtered(filter: EntryType) -> List[Entry]:
     session = SESSION()
     try:
         records: Entry = session.execute(select(Entry).where(Entry.type == filter).order_by(Entry.timestamp.asc()))
         result = records.unique().scalars().fetchall()
         return result
     except Exception as ex:
-        log(f"get_all_entries() Failed: {ex}", "e")
+        log(f"get_all_entries_filtered() Failed: {ex}", "e")
+    finally:
+        session.close()
+
+
+def test_remove_clutter():
+    session = SESSION()
+    try:
+        records = session.execute(select(Entry).filter(
+            or_(
+                Entry.content.contains('clear'),
+                Entry.content.contains('jobs'),
+                Entry.content.contains('jobkill'),
+                Entry.content.contains('cancel'),  
+            )).order_by(Entry.timestamp.asc()))
+
+        result = records.unique().scalars().fetchall()
+        return result
+    except Exception as ex:
+        log(f"get_all_entries_filtered() Failed: {ex}", "e")
     finally:
         session.close()
 
@@ -257,8 +276,16 @@ def remove_clutter():
                 Entry.content.contains('beacon to back'),
                 Entry.content.contains('to become interactive'),
                 Entry.content.contains('beacon queue'),
-                Entry.content.like('clear'),
-                Entry.content.like('jobs'),
+                and_(
+                    Entry.content.contains('> clear'), #difficult to destinguish 
+                    Entry.type.like('input')
+                ),
+                and_(
+                    Entry.content.contains('> jobs'),
+                    Entry.type.like('input')
+                ),
+                Entry.content.contains('jobkill'),
+                Entry.content.contains('cancel'),
                 Entry.content.contains('received keystrokes'),
                 Entry.content.contains('<BeaconBot>'),
                 Entry.content.contains('beacon is late'),
@@ -267,7 +294,29 @@ def remove_clutter():
         entries.delete(synchronize_session=False)
         session.commit()
     except Exception as ex:
-        log(f"get_all_entries() Failed: {ex}", "e")
+        log(f"remove_clutter() Failed: {ex}", "e")
+    finally:
+        session.close()
+
+
+def get_all_entries_filtered_containing(filter: EntryType, cont: String) -> List[Entry]:
+    """
+    Get all entrytype called filter which contains sttring called cont
+    """
+    session = SESSION()
+    try:
+        records: Entry = session.execute(
+            select(Entry).filter(
+                and_(
+                    Entry.type == filter,
+                    Entry.content.contains(cont)
+                )
+            ).order_by(Entry.timestamp.asc())
+        )
+        result = records.unique().scalars().fetchall()
+        return result
+    except Exception as ex:
+        log(f"get_all_entries_filtered_containing() Failed: {ex}", "e")
     finally:
         session.close()
 
