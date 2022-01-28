@@ -32,13 +32,13 @@ class LogType(enum.Enum):
 
 def log(text: String, status: LogType=LogType.INFO) -> None:
     if status == LogType.ERROR:
-        print(f"{bcolors.FAIL}[!!] {text} {bcolors.ENDC}")
+        print(f"{bcolors.FAIL.value}[!!] {text} {bcolors.ENDC.value}")
     elif status == LogType.WARNING:
-        print(f"{bcolors.WARNING}[!] {text} {bcolors.ENDC}")
+        print(f"{bcolors.WARNING.value}[!] {text} {bcolors.ENDC.value}")
     elif status == LogType.HEADER:
-        print(f"{bcolors.HEADER}[-] {text} {bcolors.ENDC}")
+        print(f"{bcolors.HEADER.value}[-] {text} {bcolors.ENDC.value}")
     elif status == LogType.INFO:
-        print(f"{bcolors.OKGREEN}[+] {text} {bcolors.ENDC}")
+        print(f"{bcolors.OKGREEN.value}[+] {text} {bcolors.ENDC.value}")
     else:
         print(f"{text}")
 
@@ -50,11 +50,22 @@ def store_to_file(filename: String, content: String) -> None:
 
 def write_to_csv(filename: String, header: List, rows: List) -> None:
     filename = os.path.abspath(filename.strip())
-    with open(filename, 'w', encoding='UTF8', newline="") as f:
-        writer = csv.writer(f)
-        #writer.writerow("sep=,")
-        writer.writerow(header)
-        writer.writerows(rows)
+    while True: 
+        try:
+            log("Creating csv: " + filename)
+            with open(filename, 'w', encoding='UTF8', newline="") as f:
+                writer = csv.writer(f, dialect="excel",delimiter=";")
+                #writer.writerow("sep=;")
+                writer.writerow(header)
+                writer.writerows(rows)
+        except:
+            log("The file is already in use, please close it!","w")
+            ret = yes_no("Have you closed the file or do you want to close?")
+            if ret:
+                continue
+            else:
+                break
+        break
 
 
 def read_file(path: String) -> String:
