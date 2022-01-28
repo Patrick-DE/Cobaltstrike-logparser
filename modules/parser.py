@@ -28,7 +28,10 @@ def parse_beacon_log(file: String) -> None:
             row['timestamp']  =  datetime.strptime(date + " " + matches["timestamp"].split(' ')[1], '%y%m%d %H:%M:%S')
             row['timezone'] = matches["timezone"]
             row['type'] = matches["type"]
-            row['content'] = excel_save(redact(matches["content"]))
+            if matches["type"] == "indicator" or "ls" in matches["content"]:
+                row['content'] = excel_save(matches["content"])
+            else:
+                row['content'] = excel_save(redact(matches["content"]))
         elif not matches:
             row['content'] += line
         else:
@@ -79,6 +82,34 @@ def build_entry(row: List, logtype: String, date: String, matches: List) -> List
     else:
         log(f"build_entry() Failed: Logtype not supported", "e")
     
-    row['content'] = excel_save(redact(row['content']))
+    if logtype == "indicator":
+        row['content'] = excel_save(row["content"])
+    else:
+        row['content'] = excel_save(redact(row["content"]))
     
     return row
+
+
+def create_actions():
+    row = {'input': None, 'task': None, 'output': None}
+    entries = get_all_elements(Entry)
+    ci = 0
+    ct = 0
+    co = 0
+    i: int
+    elem: Entry
+    for i, elem in enumerate(entries):
+        ty = elem.type
+        if row["input"] and \
+            row["task"] and \
+            row["output"]:
+            create_element(Action, row)
+        elif elem.type == EntryType.output and \
+            row["task"]:
+            row["task"] = elem.content
+            create_element(Action, row)
+        elif elem.type == EntryType.input and \
+            row["task"]:
+            
+    #if input.
+
