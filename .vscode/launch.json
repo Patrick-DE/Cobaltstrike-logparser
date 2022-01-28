@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args":["-w 1", "-p ./", "-o ./", "-e exclude.txt", "-m"]
+            "args":["-w 1", "-p ./", "-o ./results", "-e exclude.txt", "-m"]
         },
         {
             "name": "Python: Dbg-ParseBeacons",
@@ -26,7 +26,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args":["-w 1", "-o ./", "-e exclude.txt", "-m"]
+            "args":["-w 1", "-o ./results", "-e exclude.txt", "-m"]
         },
         {
             "name": "Python: MultiThread",
@@ -34,7 +34,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args": ["-w 16", "-p ./", "-o ./", "-e exclude.txt", "-m"]
+            "args": ["-w 16", "-p ./", "-o ./results", "-e exclude.txt", "-m"]
         }
     ]
 }
