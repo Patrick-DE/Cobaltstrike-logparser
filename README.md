@@ -23,7 +23,7 @@ optional arguments:
   -w WORKER, --worker WORKER    Set amount of workers: default=10
   -v, --verbose                 Activate debugging
   -p PATH, --path PATH          Directory path to start from generating the DB
-  -d DATABASE, --database DATABASE  Database path: default=./log.db
+  -d DATABASE, --database DATABASE  Database path: default=./results/log.db
   -o OUTPUT, --output OUTPUT    Output path for CSV
   -m, --minimize                Remove unnecessary data: keyloggs,beaconbot,sleep,exit,clear
   -e EXCLUDE, --exclude EXCLUDE A file with one IP-Range per line which should be ignored
