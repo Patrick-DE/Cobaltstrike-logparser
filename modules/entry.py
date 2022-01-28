@@ -42,6 +42,10 @@ def redact(content: String) -> String:
     content = re.sub(r"^(\\$NT\\$)?[a-f0-9]{32}$", r, content)
     # redact strings which have 32bites or 64 like aes265
     content = re.sub(r"\b([A-Fa-f0-9]{64}|[A-Fa-f0-9]{32})\b", r, content)
+    # redact runas [/user:]<user> <pw> <executable>
+    content = re.sub(r"(runas.*(\/user:)*\b\w+\b\s+)\S+", r, content)
+    # redact creating new user "net user nviso PW /add"
+    content = re.sub(r"(net\suser\s\b\w+\b\s)(.*?)\s", r, content)
     return content
 
 
