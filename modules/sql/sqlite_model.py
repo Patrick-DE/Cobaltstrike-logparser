@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Integer, String, Enum
+from sqlalchemy import Column, DateTime, Integer, String, Enum, Table
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.sql.schema import ForeignKey
 import re
@@ -79,7 +79,7 @@ class Entry(Base):
 
       def get_input(self):
             if self.type == EntryType.input or self.type == EntryType.task:
-                  return re.sub(r"\s*<.*>\s*(.*)", r"\1", self.content)
+                  return re.sub(r"\s*<.*?>\s*(.*)", r"\1", self.content)
             else:
                   raise ValueError("This function can only be called with EntryType.input or EntryType.task")
 
@@ -96,3 +96,14 @@ class Entry(Base):
             if b:
                   hostname, user, ip = b.hostname, b.user, b.ip
             return [date, time, hostname, content, user, ip]
+
+
+class Action(Base):
+      """
+      Table definition for the SQLite DB
+      """
+      __tablename__ = "action"
+      id = Column(Integer, primary_key = True)
+      input_id = Column(Integer, ForeignKey("entry.id"))
+      task_id = Column(Integer, ForeignKey("entry.id"))
+      output_id = Column(Integer, ForeignKey("entry.id"))
