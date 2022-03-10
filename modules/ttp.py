@@ -2,8 +2,15 @@ from os import path
 import string
 from typing import Dict, List
 from modules.sql.sqlite_model import *
-from modules.utils import log
+from modules.sql.sqlite_func import *
+from modules.utils import log, write_to_csv
 
+def sort_on_timestamp(elem: Entry):
+    return elem.timestamp
+
+def sort_on_joined(elem: Beacon):
+    return elem.joined
+    
 class TTPSearcher():
     path = "./ttps.csv"
     seperator = ';'
