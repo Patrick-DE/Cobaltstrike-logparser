@@ -1,4 +1,6 @@
 from datetime import datetime
+import os
+import sys
 import time
 from typing import Dict, List
 
@@ -17,12 +19,19 @@ SESSION = None
 def init_db(db_path, debug):
     global SESSION
     try:
+        path = os.path.dirname(db_path)
+        os.mkdir(path)
         engine = create_engine("sqlite:///"+db_path,echo=debug)
     except Exception as ex:
         log(f"Please provide a valid DB path: {ex}", "e")
+        sys.exit(-1)
 
     SESSION = sessionmaker(engine)
-    Base.metadata.create_all(engine)
+    try:
+        Base.metadata.create_all(engine)
+    except Exception as ex:
+        log(f"Please provide a valid DB path: {ex}", "e")
+        sys.exit(-1)
 
 
 # =========================
