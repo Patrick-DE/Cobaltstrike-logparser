@@ -1,4 +1,4 @@
-# Log-Parser for CobaltStrike
+# Log-Parser for Cobalt Strike
 
 ## Usage
 Quick usage:
