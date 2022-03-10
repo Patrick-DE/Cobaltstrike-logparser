@@ -19,8 +19,9 @@ SESSION = None
 def init_db(db_path, debug):
     global SESSION
     try:
-        path = os.path.dirname(db_path)
-        os.mkdir(path)
+        tmp_path = os.path.dirname(db_path)
+        if not os.path.isdir(tmp_path):
+            os.mkdir(tmp_path)
         engine = create_engine("sqlite:///"+db_path,echo=debug)
     except Exception as ex:
         log(f"Please provide a valid DB path: {ex}", "e")
