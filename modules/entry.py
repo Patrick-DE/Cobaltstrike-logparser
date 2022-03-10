@@ -35,7 +35,7 @@ def redact(content: String) -> String:
     # logonpasswords
     content = re.sub(r"(\w+:\d+:)\w+:\w+:::", r, content)
     # /aes265:, /rc4:, /statekey:
-    content = re.sub(r"(.*\/(?:aes256|rc4|statekey)\s*(?:=|:)\s*)(.*?)\s*$", r, content, re.I)
+    content = re.sub(r"(.*\/(?:aes256|rc4|statekey|ticket)\s*(?:=|:)\s*)(.*?)\s*$", r, content, re.I)
     # make_token
     content = re.sub(r"(make_token .*\s)(.*)", r, content, re.I)
     # ntlm

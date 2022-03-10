@@ -1,11 +1,16 @@
 from os import path
-import time, argparse
+import argparse
 from concurrent import futures
 
 from modules.reporting import *
 from modules.parser import *
 import config
 
+"""
+TODO
+Map to every task an output
+Detect based on the next output if the command was successfull or not
+"""
 def run(args):
     start = time.time()
 
@@ -33,6 +38,8 @@ def run(args):
             for idx, future in enumerate(futures.as_completed(result_futures)):
                 printProgressBar(idx, len(result_futures), "Analyzing logs")
 
+    create_actions()
+    
     if args.minimize:
         remove_clutter()
 
@@ -40,6 +47,8 @@ def run(args):
         report_input_task(args.output)
         report_dl_ul(args.output)
         report_all_beacons_spawned(args.output)
+        report_tiber(args.output)
+        report_all_indicators(args.output)
 
     print (time.time() - start)
 
@@ -64,7 +73,7 @@ if __name__ == "__main__":
     parser.add_argument('-w','--worker',type=int, default=10, help='Set amount of workers: default=10')
     parser.add_argument('-v', '--verbose', action='store_true', help='Activate debugging')
     parser.add_argument('-p', '--path', action=ValidatePath, help='Directory path to start from generating the DB')
-    parser.add_argument('-d', '--database', action=ValidatePath, default= curr_path+"\\log.db", help='Database path: default=./log.db')
+    parser.add_argument('-d', '--database', action=ValidatePath, default= curr_path+"\\results\\log.db", help='Database path: default=.\\results\\log.db')
     parser.add_argument('-o', '--output', action=ValidatePath, help='Output path for CSV')
     parser.add_argument('-m', '--minimize', action='store_true', help='Remove unnecessary data: keyloggs,beaconbot,sleep,exit,clear')
     parser.add_argument('-e', '--exclude', action=ValidatePath, help='A file with one IP-Range per line which should be ignored')
