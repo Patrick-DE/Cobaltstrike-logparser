@@ -17,7 +17,7 @@ def report_input_task(output):
     for entry in entries:
         rows.append(entry.to_row())
     header = ["Date", "Time", "Hostname", "Command", "User", "IP"]
-    write_to_csv(output+"\\activity-report.csv", header, rows)
+    write_to_csv(os.path.join(output,"activity-report.csv"), header, rows)
 
 def report_dl_ul(output):
     """
@@ -30,7 +30,7 @@ def report_dl_ul(output):
     for entry in entries:
         rows.append(entry.to_row())
     header = ["Date", "Time", "Hostname", "File", "User", "IP"]
-    write_to_csv(output+"\\dl-ul-report.csv", header, rows)
+    write_to_csv(os.path.join(output,"dl-ul-report.csv"), header, rows)
 
 def report_all_beacons_spawned(output):
     beacons = get_all_valid_beacons()
@@ -39,7 +39,7 @@ def report_all_beacons_spawned(output):
     for beacon in beacons:
         rows.append(beacon.to_row())
     header = ["Hostname", "IP", "Internet via IP", "User", "Process", "Process ID", "Joined", "Exited"]
-    write_to_csv(output+"\\beacon-report.csv", header, rows)
+    write_to_csv(os.path.join(output,"beacon-report.csv"), header, rows)
 
 def report_all_indicators(output):
     """
@@ -51,6 +51,6 @@ def report_all_indicators(output):
     for entry in entries:
         rows.append(entry.to_row())
     header = ["Date", "Time", "Hostname", "File", "User", "IP"]
-    write_to_csv(output+"\\ioc-report.csv", header, rows)
+    write_to_csv(os.path.join(output,"ioc-report.csv"), header, rows)
 
 

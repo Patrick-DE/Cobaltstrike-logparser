@@ -12,13 +12,16 @@ def sort_on_joined(elem: Beacon):
     return elem.joined
     
 class TTPSearcher():
-    path = "./ttps.csv"
+    path = "ttps.csv"
     seperator = ';'
+    ready = False
     ttps :List[List] = []
 
     def __init__(self):
-        self.verify_path()
-        self.read_ttps()
+        ready = self.verify_ttpfile()
+        if ready:
+            self.read_ttps()
+
 
     def add_ttp(self, tiber :Dict) -> Dict:
         #tiber = {"Phase":"", "Tactic":"", "Technique ID":"", "Technique Name":"", "Executed on":"", "Operational Guidance":"", "Goal":"", "Result":"", "Thread Actor":"", "Related Findings(s)":"", "Date":"", "Time":""}
@@ -47,15 +50,19 @@ class TTPSearcher():
             self.ttps.append(arr)
         
     def verify_path(self):
-        self.path = path.abspath(self.path.strip())
+        self.path = path.abspath(os.path.dirname(self.path))
         if not self.path:
             log(f"Please choose a valid path for the TTP file: {self.path}!", "e")
             exit(-1)
         
+    def verify_ttpfile(self):
+        self.path = path.abspath(self.path.strip())
         if not path.isfile(self.path):
-            log(f"Please choose a valid path for the TTP file: {self.path}!", "e")
-            exit(-1)
+            log(f"The TTP file could not be found: {self.path}!", "e")
+            return False
+        return True
 
+    
 
 pre = [
 ["","Resource Development","T1583.001"," Acquire Infrastructure:  Domains","N/A","Registration of <DOMAIN> for Scenario <X>","Obtain domain for phishing","Success"],
@@ -73,6 +80,9 @@ pre = [
 ]
 def report_tiber(output):
     ttp = TTPSearcher()
+    if not ttp.ready:
+        return
+        
     entries = get_all_entries_filtered(filter=EntryType.input)
     entries = entries + get_all_entries_filtered_containing(filter=EntryType.task, cont="Tasked beacon to")
     entries.sort(key=sort_on_timestamp)

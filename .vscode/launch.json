@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args":["-w 1", "-p ./", "-o ./results", "-e exclude.txt", "-m"]
+            "args":["-w 1", "-p ./", "-o results", "-e exclude.txt", "-m"]
         },
         {
             "name": "Python: Dbg-ParseBeacons",

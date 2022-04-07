@@ -53,8 +53,8 @@ def run(args):
         report_input_task(args.output)
         report_dl_ul(args.output)
         report_all_beacons_spawned(args.output)
-        report_tiber(args.output)
         report_all_indicators(args.output)
+        report_tiber(args.output)
 
     print(time.time() - start)
 
@@ -65,12 +65,24 @@ class ValidatePath(argparse.Action):
         if not npath:
             return
 
-        if not path.isdir(npath) and not path.isfile(npath):
-            log(f"Please choose a valid path for {self.dest}!", "e")
-            exit(-1)
+        if not path.isdir(npath):
+            os.mkdir(npath)
+            #log(f"Please choose a valid path for {self.dest}!", "e")
+            #exit(-1)
 
         setattr(namespace, self.dest, npath)
 
+class ValidateFile(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        npath = path.abspath(values.strip())
+        if not npath:
+            return
+
+        if not path.isfile(npath):
+            log(f"Please choose a valid file for {self.dest}!", "e")
+            exit(-1)
+
+        setattr(namespace, self.dest, npath)
 
 if __name__ == "__main__":
     curr_path = path.dirname(path.abspath(__file__))
@@ -83,13 +95,12 @@ if __name__ == "__main__":
                         action='store_true', help='Activate debugging')
     parser.add_argument('-p', '--path', action=ValidatePath,
                         help='Directory path to start from generating the DB')
-    parser.add_argument('-d', '--database', action=ValidatePath, default=curr_path +
-                        "\\results\\log.db", help='Database path: default=.\\results\\log.db')
+    parser.add_argument('-d', '--database', action=ValidatePath, default=os.path.join(curr_path, 'results','log.db'), help='Database path: default=results/log.db')
     parser.add_argument('-o', '--output', action=ValidatePath,
                         help='Output path for CSV')
     parser.add_argument('-m', '--minimize', action='store_true',
                         help='Remove unnecessary data: keyloggs,beaconbot,sleep,exit,clear')
-    parser.add_argument('-e', '--exclude', action=ValidatePath,
+    parser.add_argument('-e', '--exclude', action=ValidateFile,
                         help='A file with one IP-Range per line which should be ignored')
     args = parser.parse_args()
 
