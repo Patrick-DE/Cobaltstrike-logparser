@@ -94,7 +94,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not args.path and not args.output:
-        log("Please select either:\n-g for generating the database\n-o for generating the reports (required at least -g once before)", "e")
+        log("Please select either:\n-d for generating the database\n-o for generating the reports (requires at least -g once before)", "e")
 
     """TODO
     Reports:
