@@ -49,5 +49,5 @@ optional arguments:
 
 ## Todos
 ✔ Make it work 😂
-
+❌ No support for linux as of now :( 
 ❌ Create cleaner download / upload report
