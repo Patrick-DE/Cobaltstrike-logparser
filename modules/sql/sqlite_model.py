@@ -17,6 +17,7 @@ class EntryType(enum.Enum):
       download = 9
       upload = 10
       events = 11
+      warning = 12
 
 
 Base = declarative_base()
