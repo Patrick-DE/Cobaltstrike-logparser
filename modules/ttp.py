@@ -18,8 +18,8 @@ class TTPSearcher():
     ttps :List[List] = []
 
     def __init__(self):
-        ready = self.verify_ttpfile()
-        if ready:
+        self.ready = self.verify_ttpfile()
+        if self.ready:
             self.read_ttps()
 
 
