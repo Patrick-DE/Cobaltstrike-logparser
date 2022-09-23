@@ -88,13 +88,16 @@ def report_tiber(output):
     entries.sort(key=sort_on_timestamp)
     rows = pre
     for entry in entries:
+        # skip not required elements
+        if "note " in entry.content:
+            continue
         tiber = {"Phase":"", "Tactic":"", "Technique ID":"", "Technique Name":"", "Executed on":"", "Operational Guidance":"", "Goal":"", "Result":"", "Thread Actor":"", "Related Findings(s)":"", "Date":"", "Time":""}
         tiber["Executed on"] = entry.parent.hostname
         tiber["Date"] = entry.timestamp.strftime("%d/%m/%Y")
         tiber["Time"] = entry.timestamp.strftime("%H:%M:%S")
         tiber["Operational Guidance"] = entry.get_input()
         tiber = ttp.add_ttp(tiber)
-        if entry.get_input == "":
+        if entry.get_input() == "":
             continue            
         rows.append(tiber.values())
     write_to_csv(output+"\\tiber-report.csv", tiber.keys(), rows)
