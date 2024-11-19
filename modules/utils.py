@@ -1,10 +1,8 @@
-from argparse import FileType
 import enum
-import sys, os, csv
+import re, sys, os, csv
 from typing import List
-import ipaddress
-
-from sqlalchemy.sql.sqltypes import CHAR, Boolean, String
+from sqlalchemy.sql.sqltypes import Boolean, String
+from modules.configuration import get_config
 
 class bcolors (enum.Enum):
     HEADER = '\033[94m'
@@ -58,9 +56,9 @@ def write_to_csv(filename: String, header: List, rows: List) -> None:
                 #writer.writerow("sep=;")
                 writer.writerow(header)
                 writer.writerows(rows)
-        except:
+        except Exception as ex:
             log("The file is already in use, please close it!","w")
-            ret = yes_no("Have you closed the file or do you want to close?")
+            ret = yes_no("Have you closed the file or do you want to stop the execution?")
             if ret:
                 continue
             else:
@@ -77,17 +75,6 @@ def read_file(path: String) -> String:
         log(ex.filename + ": " + ex.strerror, "e")
         sys.exit(0)
     return s
-
-
-def is_ip_in_ranges(ip: String, ranges: List):
-    for range in ranges:
-        try:
-            if ipaddress.ip_address(ip) in ipaddress.ip_network(range):
-                return True
-        except Exception as ex:
-            return False
-    return False
-
 
 def get_all_files(path: String, extension: String, prefix: String = "") -> List:
     list_of_files = []
@@ -164,3 +151,39 @@ def printProgressBar (iteration, total, prefix = '', suffix = 'Complete', decima
     # Print New Line on Complete
     if iteration == total: 
         print()
+
+
+def redact(content: str) -> str:
+    """
+    Redact sensitive information based on global config
+    Args:
+        content: String to redact
+    Returns:
+        Redacted content string
+    """
+    config = get_config()
+    
+    replacement = config.redactions.flags.replacement
+    case_insensitive = config.redactions.flags.case_insensitive
+    
+    # Apply each pattern
+    for name, pattern_config in config.redactions.patterns.items():
+        regex_flags = re.I if case_insensitive else 0
+        try:
+            content = re.sub(
+                pattern_config.pattern.strip(),
+                replacement,
+                content,
+                flags=regex_flags
+            )
+        except re.error as e:
+            log(f"Redaction failed for pattern {name}: {e}", "e")
+    
+    return content
+
+
+def excel_save(content: String) -> String:
+    """Replaces the csv seperator ',' with ';'"""
+    if "," in content:
+        content.replace(",", ";")
+    return content

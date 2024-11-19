@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args":["-w 1", "-p ./", "-o results", "-e exclude.txt", "-m"]
+            "args":["-w 1", "-p ./", "-o results", "-e config.yml", "-m"]
         },
         {
             "name": "Python: Dbg-ParseBeacons",
@@ -18,7 +18,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args":["-w 1", "-p ./", "-e exclude.txt"]
+            "args":["-w 1", "-p ./", "-e config.yml"]
         },
         {
             "name": "Python: Dbg-Report",
@@ -26,7 +26,15 @@
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args":["-w 1", "-o ./results", "-e exclude.txt", "-m"]
+            "args":["-w 1", "-d ./log.db", "-e config.yml", "-m"]
+        },
+        {
+            "name": "Python: SingleThread",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/gimmelogs.py",
+            "console": "integratedTerminal",
+            "args": ["-w 1", "-p C:\\Users\\patri\\Downloads\\projects\\Wigglytuff\\report\\logs", "-o ./results", "-e config.yml", "-m"]
         },
         {
             "name": "Python: MultiThread",
@@ -34,7 +42,15 @@
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args": ["-w 16", "-p ./", "-o ./results", "-e exclude.txt", "-m"]
-        }
+            "args": ["-w 16", "-p ./", "-o ./results", "-e config.yml", "-m"]
+        },
+        {
+            "name": "Python: DEBUG",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/gimmelogs.py",
+            "console": "integratedTerminal",
+            "args": ["-w 1", "-m", "-p C:\\Users\\patri\\Downloads\\projects\\Kilimanjaro\\logs\\sc1", "-e config.yml"]
+        },
     ]
 }

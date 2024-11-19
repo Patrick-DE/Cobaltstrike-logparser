@@ -75,7 +75,7 @@ pre = [
 ["","Defense Evasion","T1027","Obfuscated Files or Information","N/A","The VBA payload was obfuscated to evade detection","Defense evasion with obfuscated payloads","Success"],
 ["","Defense Evasion","T1027","Obfuscated Files or Information","N/A","The VBA code itself was obfuscated, as was the DLL embedded inside the VBA code","Defense evasion with obfuscated payloads","Success"],
 ["","Defense Evasion","T1480.001","Execution Guardrails: Environmental Keying","N/A","The VBA payload would only run on domain-joined targets","Defense evasion using limted execution","Success"],
-["","Defense Evasion","T1112","Modify Registry","N/A","Registry key written to perform COM hijack: Computer\HKEY_CURRENT_USER\Software\Classes\CLSID\<CLSID>","Perform COM hijack for persistance","Success"],
+["","Defense Evasion","T1112","Modify Registry","N/A","Registry key written to perform COM hijack: Computer\\HKEY_CURRENT_USER\\Software\\Classes\\CLSID\\<CLSID>","Perform COM hijack for persistance","Success"],
 ["","Execution","T1059.005","Command and Scripting Interpreter: Visual Basic","N/A","Office document (.doc) containing VBA code to perform the COM hijack with embedded DLL.","Evade detection by delaying payload execution with the COM hjiack","Success"]
 ]
 def report_tiber(output):
@@ -87,17 +87,13 @@ def report_tiber(output):
     entries = entries + get_all_entries_filtered_containing(filter=EntryType.task, cont="Tasked beacon to")
     entries.sort(key=sort_on_timestamp)
     rows = pre
+    tiber = {"Phase":"", "Tactic":"", "Technique ID":"", "Technique Name":"", "Executed on":"", "Operational Guidance":"", "Goal":"", "Result":"", "Thread Actor":"", "Related Findings(s)":"", "Date":"", "Time":""}
+    
     for entry in entries:
-        # skip not required elements
-        if "note " in entry.content:
-            continue
-        tiber = {"Phase":"", "Tactic":"", "Technique ID":"", "Technique Name":"", "Executed on":"", "Operational Guidance":"", "Goal":"", "Result":"", "Thread Actor":"", "Related Findings(s)":"", "Date":"", "Time":""}
         tiber["Executed on"] = entry.parent.hostname
         tiber["Date"] = entry.timestamp.strftime("%d/%m/%Y")
         tiber["Time"] = entry.timestamp.strftime("%H:%M:%S")
-        tiber["Operational Guidance"] = entry.get_input()
-        tiber = ttp.add_ttp(tiber)
-        if entry.get_input() == "":
-            continue            
+        tiber["Operational Guidance"] = excel_save(redact(entry.content))
+        tiber = ttp.add_ttp(tiber)     
         rows.append(tiber.values())
     write_to_csv(output+"\\tiber-report.csv", tiber.keys(), rows)

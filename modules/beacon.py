@@ -1,7 +1,8 @@
+from datetime import datetime
 import os
 from modules.sql.sqlite_func import *
-from modules.utils import is_ip_in_ranges
-import config
+from modules.configuration import get_config
+
 
 def get_beacon_id(file: String):
     """Get the beacon id which is based on the beacon_xxxx.log files name"""
@@ -25,32 +26,42 @@ def fill_beacon_info(beacon: Beacon) -> None:
         update_element(Beacon, id=beacon.id, **beacon_info)
 
 
-def get_beacon_metadata(line: String, date: String=None) -> Dict:
-    """Tries to parse the line based on the pattern_metadata.
+def get_beacon_metadata(line: str, date: str = None) -> dict:
+    """
+    Tries to parse the line based on the pattern_metadata.
+    
+    Args:
+        line: Line to parse
+        date: Optional date string
     
     Returns:
-    - Dict with beacon metadata
-    - Empty Dict"""
-    entry = re.match(config.pattern_line, line)
+        Dict with beacon metadata or empty Dict
+    """
+    config = get_config()
+    entry = re.match(config.parsing.cs.line, line)
     if not entry:
         return {}
     
+    new_date = None
     if date:
-        new_date = datetime.strptime(date + " " + entry["timestamp"].split(' ')[1], '%y%m%d %H:%M:%S')
-
-    matches = re.findall(config.pattern_metadata, entry["content"])
+        try:
+            timestamp = entry["timestamp"].split(' ')[1]
+            new_date = datetime.strptime(f"{date} {timestamp}", '%y%m%d %H:%M:%S')
+        except ValueError as e:
+            print(f"Failed to parse date: {date} {timestamp}")
+    
+    matches = re.findall(config.parsing.cs.metadata, entry["content"])
     if len(matches) == 9:
         return {
-            "ip_ext":''.join(matches[0]), 
-            "hostname":''.join(matches[2]), 
-            "user":''.join(matches[3]),
-            "process":''.join(matches[4]),
-            "pid":''.join(matches[5]),
-            "joined":new_date
+            "ip_ext": ''.join(matches[0]), 
+            "hostname": ''.join(matches[2]), 
+            "user": ''.join(matches[3]),
+            "process": ''.join(matches[4]),
+            "pid": ''.join(matches[5]),
+            "joined": new_date
         }
-    else:
-        #log(f"parse_beacon_metadata(): Did not detect metadata: {line}", "w")
-        return {}
+    
+    return {}
 
 
 def create_beacon_from_file(file: String) -> Integer:
@@ -63,9 +74,9 @@ def create_beacon_from_file(file: String) -> Integer:
     beacon["ip"] = paths[len(paths)-2]
     beacon["date"] = paths[len(paths)-3]
     beacon["id"] = get_beacon_id(paths[len(paths)-1])
-    # exclude logs of test machines and everything which is not an IP address
-    if is_ip_in_ranges(beacon["ip"], config.exclude):
-        return None, None
+    # # exclude beacon logs based on internal ip of test machines and everything which is not an IP address
+    # if is_ip_excluded(beacon["ip"], config.exclusions.internal):
+    #     return None, None
 
     # beacons without an ID will be ignored, happens usually only with faulty cna scripts:
     # \\unknown\\beacon_aggressor.bridges.DialogBridge$_A@xxx.log'

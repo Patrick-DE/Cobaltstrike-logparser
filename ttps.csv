@@ -2,7 +2,7 @@
  /add /domain;NP;Persistence;T1098;Account Manipulation;Create an NVISO account to not manipulate others and have persistence in the network
 [REDACTED];AO;Defense Evasion, Persistence, Privilege Escalation;T1078;Valid Accounts;Valid accounts were used in order to either gain initial access, establish persistence, or privilege escalate
 \C$;NP;Lateral Movement;T1077;Windows Admin Shares;Interact with file shares and collect credentials, lateral move with administrative rights, via execute scheduled tasks or service execution
-binPath=;NP;Execution;T1569.002;System Services:�Service Execution;Modify the service to lateral move between devices within the network
+binPath=;NP;Execution;T1569.002;System Services: Service Execution;Modify the service to lateral move between devices within the network
 blockdlls;IF;Execution, Defense Evasion;T1106, T1564;Execution through API;The Blockdll technique prevents the analysis of used process
 browserpivot;AO;Defense Evasion, Credential Access, Privilege Escalation;T1055,T1111,T1078;Process Injection,Two-Factor Authentication Interception,Valid Accounts;
 cacls ;NP;Defense Evasion;T1222;File and Directory Permissions Modification;Change permissions of files and folders
@@ -96,8 +96,8 @@ scheduledtask;IF;Execution, Persistence, Privilege Escalation;T1053.005;Schedule
 schtasks /Delete;IF;Execution, Persistence, Privilege Escalation;T1053.005;Scheduled Task/Job: Scheduled Task;Remove the scheduled task because it is not used or to cleanup and reduce the footprint
 screenshot;AO;Collection;T1113;Screen Capture;Gain information of active programs and purpose of the current workstation
 screenwatch;AO;Collection;T1113;Screen Capture;Gain information of active programs and purpose of the current workstation
-Seatbelt;NP;Process Injection;T1082;System Information Discovery;Get a lot of information about the local configuration of a system which should help to perform privilege escalation
-SafeHarnass.exe;NP;Process Injection;T1082;System Information Discovery;Is an custom version of Seatbelt, Get a lot of information about the local configuration of a system which should help to perform privilege escalation
+Seatbelt;NP;Discovery;T1082;System Information Discovery;Get a lot of information about the local configuration of a system which should help to perform privilege escalation
+SafeHarnass.exe;NP;Discovery;T1082;System Information Discovery;Is an custom version of Seatbelt, Get a lot of information about the local configuration of a system which should help to perform privilege escalation
 SharpAllowedToAct.exe;NP;Initial Access;T1199;Trusted Relationship;Takingover a computer object through Resource-Based Constrained Delegation (msDS-AllowedToActOnBehalfOfOtherIdentity)
 SharpChrome.exe cookies;NP;Credential Access;T1555;Credentials from Password Stores;Extract cookies stored in the Chrome browser in oder to impersonate this user on web applications
 SharpChrome.exe logins;NP;Credential Access;T1555;Credentials from Password Stores;Extract passwords stored in the Chrome browser in oder to impersonate this user
@@ -138,3 +138,26 @@ Tasked beacon to remove;NP;Defense Evasion;T1070.004;Indicator Removal on Host: 
 spawnas ;NP;Defense Evasion, Privilege Escalation;T1134.003;Access Token Manipulation: Make and Impersonate Token;Spawn a process as another user to escalate privileges and bypass access controls
 Tasked beacon to revert token;NP;Defense Evasion, Privilege Escalation;T1134.003;Access Token Manipulation: Make and Impersonate Token;Remove the impersonated tokens to change privileges and bypass access controls
 klist;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;Show list of Kerberos tokens
+whoami;IF;Discovery;T1082;System Information Discovery;Identify the user available in the current session
+schtasksenum;IF;Discovery;;;Enumeration of local schedules tasks
+adcs_enum;NP;;;;Identification of Microsoft ADCS on the internal network
+SharpChrome.exe;IF;Credential Access;;;Dump credentials, bookmarks or history data from all common browsers
+lazagne.exe;IF;Credential Access;;;Dump credentials, bookmarks or history data from all common browsers
+SharpWeb.exe;IF;Credential Access;;;Dump credentials, bookmarks or history data from all common browsers
+chromiumkeydump;IF;Credential Access;;;Dump credentials, bookmarks or history data from all common browsers
+domainenum;NP;Discovery;T1482;Domain Trust Discovery;Identify information about the forest and connected domains
+TakeOwn;NP;;;;Set the owner of a file in order to restrict access
+gpresult ;IF;Discovery;;;Identify information about the GPOs applied to the given host
+tracert;IF;;;;Gather information abou the network infrastructure and identify routes on the internal network and test if paths are reachable
+logonserver;NP;Discovery;;;Identify the domain controller used by the host
+HiddenDesktop;NP;;;;Connecting to a target server to execute graphical applications
+forward port;NP;;;;Forwarding a port form a victim machine to the attacker in order to connect to only locally available services
+tgtdelegation;NP;;;;
+quser;NP;Discovery;;;Currenty logged in user and their idle time
+Domaininfo;NP;Discovery;T1482;Domain Trust Discovery;Identify information about the forest and connected domains
+CredEnum;NP;Credential Access;;;Dump credential on the local system and can also be used with low privileges
+GetMachineAccountQuota;NP;;;;Get the quote of how many machine accounts can be created in the domain. Even if it says above 0 it is still possible that the persmissions are sufficient to create a machine account
+AddMachineAccount;NP;;;;Add a machine account to the domain. This is often done in combination with Resoucre Based Constrained Delegation
+Kerberoast;NP;;;;Request a TGT encrypted with the password from the domain controller. This allows an attacker to crack the hash offline via hashcat or john
+OSQL.EXE;AO;;;;Access a database to exfiltrate sensitive data like customer information
+qprivs;IF;Discovery;;;Identifying 

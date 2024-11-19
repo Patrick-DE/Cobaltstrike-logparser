@@ -1,9 +1,9 @@
+import re, enum
 from sqlalchemy import Column, DateTime, Integer, String, Enum, Table
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.sql.schema import ForeignKey
-import re
+from modules.utils import excel_save, redact
 
-import enum
 class EntryType(enum.Enum):
       metadata = 1
       input = 2
@@ -13,11 +13,13 @@ class EntryType(enum.Enum):
       note = 6
       error = 7
       indicator = 8
+      job_registered = 9
+      job_completed = 10
       # custom attributes
-      download = 9
-      upload = 10
-      events = 11
-      warning = 12
+      download = 11
+      upload = 12
+      events = 13
+      warning = 14
 
 
 Base = declarative_base()
@@ -34,10 +36,23 @@ class Beacon(Base):
       user =  Column(String, nullable=True)
       process = Column(String, nullable=True)
       pid = Column(Integer, nullable=True)
-      date = Column(String, nullable=False)
-      joined = Column(DateTime, nullable=True)
-      exited = Column(DateTime, nullable=True)
+      os = Column(String, nullable=True)
+      version = Column(String, nullable=True)
+      build = Column(String, nullable=True)
+      arch = Column(String, nullable=True)
+      timestamp = Column(DateTime, nullable=False)
       entries = relationship("Entry", back_populates="parent",lazy='joined', join_depth=1)
+      
+      @property
+      def joined(self):
+            if self.entries:
+                  return self.entries[0].timestamp
+            return self.timestamp 
+      @property
+      def exited(self):
+            if self.entries:
+                  return self.entries[-1].timestamp
+            return self.timestamp
 
       def is_high_integrity(self):
             if "*" in self.user:
@@ -65,6 +80,8 @@ class Entry(Base):
       timestamp = Column(DateTime)
       timezone = Column(String)
       type = Column(Enum(EntryType))
+      operator = Column(String, nullable=True)
+      ttp = Column(String, nullable=True)
       content = Column(String)
       parent_id = Column(Integer, ForeignKey('beacon.id'))
       parent = relationship("Beacon", back_populates="entries", lazy="joined", join_depth=1)
@@ -73,23 +90,15 @@ class Entry(Base):
       #      if item == "content" and self.type == EntryType.input:
       #            return re.sub(r"\s*<.*>\s*(.*)", "", self.content).group(1)
 
-      def get_operator(self):
-            if self.type == EntryType.input:
-                  return self.content.split("<")[1].split(">")[0]
-            return None
-
-      def get_input(self):
-            if self.type == EntryType.input or self.type == EntryType.task:
-                  return re.sub(r"\s*<.*?>\s*(.*)", r"\1", self.content)
-            else:
-                  raise ValueError("This function can only be called with EntryType.input or EntryType.task")
+      # def get_input(self):
+      #       if self.type == EntryType.input or self.type == EntryType.task:
+      #             return re.sub(r"\s*<.*?>\s*(.*)", r"\1", self.content)
+      #       else:
+      #             raise ValueError("This function can only be called with EntryType.input or EntryType.task")
 
       def to_row(self):
             hostname, user, ip = "","",""
-            if self.type == EntryType.input or self.type == EntryType.task:
-                  content = self.get_input()
-            else:
-                  content = self.content
+            content = excel_save(redact(self.content))
 
             date = self.timestamp.strftime("%d/%m/%y")
             time = self.timestamp.strftime("%H:%M")

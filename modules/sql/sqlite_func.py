@@ -1,4 +1,3 @@
-from datetime import datetime
 import os
 import sys
 import time
@@ -8,12 +7,13 @@ import sqlalchemy
 from sqlalchemy.future import select
 from sqlalchemy.future.engine import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import exc, update, delete, text, or_, and_
-from sqlalchemy.sql.elements import Null
+from sqlalchemy import exc, update, delete, text, or_, and_, func
 
 from modules.sql.sqlite_model import *
+from modules.configuration import is_ip_excluded, get_config, AndCommand
 from modules.utils import log
 
+config = get_config()
 SESSION = None
 
 def init_db(db_path, debug):
@@ -30,6 +30,7 @@ def init_db(db_path, debug):
     SESSION = sessionmaker(engine)
     try:
         Base.metadata.create_all(engine)
+        return SESSION
     except Exception as ex:
         log(f"Please provide a valid DB path: {ex}", "e")
         sys.exit(-1)
@@ -214,6 +215,19 @@ def get_all_valid_beacons() -> List[Beacon]:
         log(f"get_all_complete_beacons() Failed: {ex}", "e")
     finally:
         session.close()
+
+
+def get_last_beacon_entry_time(beacon_id: int):
+    session = SESSION()
+    try:
+        # Query to fetch the latest timestamp of an entry for a specific beacon
+        last_entry_time = session.query(func.max(Entry.timestamp)).filter(Entry.parent_id == beacon_id).scalar()
+        return last_entry_time
+    except Exception as e:
+        print(f"Failed to fetch last entry time for beacon {beacon_id}: {e}")
+        return None
+    finally:
+        session.close()
 # =========================
 # ==========ENTRY==========
 # =========================
@@ -244,67 +258,6 @@ def get_all_entries_filtered(filter: EntryType) -> List[Entry]:
         return result
     except Exception as ex:
         log(f"get_all_entries_filtered() Failed: {ex}", "e")
-    finally:
-        session.close()
-
-
-def test_remove_clutter():
-    session = SESSION()
-    try:
-        records = session.execute(select(Entry).filter(
-            or_(
-                Entry.content.contains('clear'),
-                Entry.content.contains('jobs'),
-                Entry.content.contains('jobkill'),
-                Entry.content.contains('cancel'),  
-            )).order_by(Entry.timestamp.asc()))
-
-        result = records.unique().scalars().fetchall()
-        return result
-    except Exception as ex:
-        log(f"get_all_entries_filtered() Failed: {ex}", "e")
-    finally:
-        session.close()
-
-
-def remove_clutter():
-    """This function removes the following entries from the DB:
-    - keylogger output
-    - sleep commands issues by the operator
-    - BeaconBot responses
-    - Screenshot output
-    https://docs.sqlalchemy.org/en/14/core/expression_api.html"""
-    session = SESSION()
-    try:
-        entries = session.query(Entry).filter(
-            or_(
-                Entry.content.contains('> sleep'),
-                Entry.content.contains('> exit'),
-                Entry.content.contains('beacon to exit'),
-                Entry.content.contains('beacon to sleep'),
-                Entry.content.contains('beacon to list'),
-                Entry.content.contains('beacon to back'),
-                Entry.content.contains('to become interactive'),
-                Entry.content.contains('beacon queue'),
-                and_(
-                    Entry.content.contains('> clear'), #difficult to destinguish 
-                    Entry.type.like('input')
-                ),
-                and_(
-                    Entry.content.contains('> jobs'),
-                    Entry.type.like('input')
-                ),
-                Entry.content.contains('jobkill'),
-                Entry.content.contains('cancel'),
-                Entry.content.contains('received keystrokes'),
-                Entry.content.contains('<BeaconBot>'),
-                Entry.content.contains('beacon is late'),
-                Entry.content.contains('received screenshot'),
-            ))
-        entries.delete(synchronize_session=False)
-        session.commit()
-    except Exception as ex:
-        log(f"remove_clutter() Failed: {ex}", "e")
     finally:
         session.close()
 
@@ -351,3 +304,149 @@ def get_upload_entries():
         log(f"get_element_by_values() Failed: {ex}", "e")
     finally:
         session.close()
+        
+        
+
+# =========================
+# =========CLEANUP=========
+# =========================
+
+
+def test_remove_clutter():
+    session = SESSION()
+    try:
+        records = session.execute(select(Entry).filter(
+            or_(
+                Entry.content.contains('clear'),
+                Entry.content.contains('jobs'),
+                Entry.content.contains('jobkill'),
+                Entry.content.contains('cancel'),  
+            )).order_by(Entry.timestamp.asc()))
+
+        result = records.unique().scalars().fetchall()
+        return result
+    except Exception as ex:
+        log(f"get_all_entries_filtered() Failed: {ex}", "e")
+    finally:
+        session.close()
+
+def build_filter_conditions(filters: List[str]):
+    """Build SQLAlchemy filter conditions from list of strings"""
+    or_conditions = []
+
+    for filter_item in filters:
+        if isinstance(filter_item, dict):
+            # '_and' condition with multiple strings
+            and_parts = [part.strip() for part in filter_item["_and"]]
+            and_conditions = [Entry.content.contains(part) for part in and_parts]
+            or_conditions.append(and_(*and_conditions))
+        else:
+            or_conditions.append(Entry.content.contains(filter_item))
+
+    return or_conditions
+
+def remove_clutter():
+    """This function removes the following entries from the DB:
+    - keylogger output
+    - sleep commands issues by the operator
+    - BeaconBot responses
+    - Screenshot output
+    https://docs.sqlalchemy.org/en/14/core/expression_api.html"""
+    config = get_config()
+    session = SESSION()
+    try:
+        # Get filters from config
+        filters = config.exclusions.commands
+        conditions = build_filter_conditions(filters)
+        
+        entries = session.query(Entry).filter(or_(*conditions))
+        count = entries.count()
+        entries.delete(synchronize_session=False)
+        session.commit()
+        log(f"Removed {count} clutter entries")
+        
+    except Exception as ex:
+        log(f"remove_clutter() Failed: {ex}", "e")
+        session.rollback()
+    finally:
+        session.close()
+
+def remove_via_ip(excluded_ranges, public_ip=False):
+    """Remove beacons and entries for ip_ext in excluded_ranges:
+    https://docs.sqlalchemy.org/en/14/core/expression_api.html"""
+    session = SESSION()
+    try:
+        if not excluded_ranges:
+            return
+
+        # Get all beacons
+        beacons = session.query(Beacon).all()
+        
+        # Filter beacons with excluded IPs
+        beacon_ids = []
+        for beacon in beacons:
+            if public_ip:
+                if beacon.ip_ext and is_ip_excluded(beacon.ip_ext, excluded_ranges):
+                    beacon_ids.append(beacon.id)
+            elif not public_ip:
+                if beacon.ip and is_ip_excluded(beacon.ip, excluded_ranges):
+                    beacon_ids.append(beacon.id)
+            else:
+                log(f"remove_via_ip() Failed: Invalid public_ip value: {public_ip}", "e")
+                return
+
+        if beacon_ids:
+            # Remove related entries first
+            session.query(Entry).filter(
+                Entry.parent_id.in_(beacon_ids)
+            ).delete(synchronize_session=False)
+
+            # Remove beacons
+            session.query(Beacon).filter(
+                Beacon.id.in_(beacon_ids)
+            ).delete(synchronize_session=False)
+
+            session.commit()
+            
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+
+def remove_via_hostname(excluded_hostnames):
+    """Remove beacons and entries where hostname matches excluded hostnames in config"""
+    session = SESSION()
+    try:
+        if not excluded_hostnames:
+            return
+
+        # Get all beacons
+        beacons = session.query(Beacon).all()
+        
+        # Filter beacons with excluded hostnames
+        beacon_ids = [
+            beacon.id for beacon in beacons 
+            if beacon.hostname and beacon.hostname in excluded_hostnames
+        ]
+
+        if beacon_ids:
+            # Remove related entries first
+            session.query(Entry).filter(
+                Entry.beacon_id.in_(beacon_ids)
+            ).delete(synchronize_session=False)
+
+            # Remove beacons
+            session.query(Beacon).filter(
+                Beacon.id.in_(beacon_ids)
+            ).delete(synchronize_session=False)
+
+            session.commit()
+            
+    except Exception as e:
+        session.rollback()
+        log(f"remove_via_hostname() Failed: {e}", "e")
+        raise e
+    finally:
+        session.close()
+

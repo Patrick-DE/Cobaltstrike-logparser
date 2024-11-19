@@ -1,8 +1,55 @@
+from datetime import datetime
+import re
+import os
+from typing import List, Tuple
+
+from modules.configuration import config, get_config
+from modules.utils import log
+from modules.sql.sqlite_model import Entry, EntryType
+
 from modules.beacon import *
 from modules.entry import *
 
 
+# def get_pattern(type: str) -> Tuple[str, str]:
+#     """Get pattern based on file type"""
+#     config = get_config()
+    
+#     if type == "beacon":
+#         return "line", config.parsing.cs.line
+#     elif type == "downloads":
+#         return "downloads", config.parsing.cs.download
+#     elif type == "events":
+#         return "events", config.parsing.cs.events
+#     else:
+#         log(f"get_pattern() Failed: No pattern found", "e")
+#         exit(1)
+
+# def parse_line(line: str, type: str, date: str = None) -> Entry:
+#     """Parse a line using the appropriate pattern"""
+#     pattern_type, pattern = get_pattern(type)
+    
+#     entry = re.match(pattern, line)
+#     if not entry:
+#         return None
+        
+#     try:
+#         timestamp = entry["timestamp"].split(' ')[1]
+#         parsed_date = datetime.strptime(f"{date} {timestamp}", "%y%m%d %H:%M:%S") if date else None
+        
+#         return Entry(
+#             timestamp=parsed_date,
+#             type=EntryType[pattern_type],
+#             content=entry["content"].strip()
+#         )
+#     except (KeyError, ValueError) as e:
+#         log(f"parse_line() Failed: {e}", "e")
+#         return None
+
+
 def parse_beacon_log(file: String) -> None:
+    config = get_config()
+    
     bid, date = create_beacon_from_file(file)
     if not bid:
         return
@@ -13,7 +60,7 @@ def parse_beacon_log(file: String) -> None:
     # parse log entries
     lines = open(file, 'r', encoding="UTF-8").readlines()
     for line in lines:
-        matches = re.match(config.pattern_line, line, re.MULTILINE)
+        matches = re.match(config.parsing.cs.line, line, re.MULTILINE)
 
         # if line is start of a new log entry process, if not append to content
         if matches != None and len(matches.groups()) == 4:
@@ -42,13 +89,15 @@ def parse_beacon_log(file: String) -> None:
                 f"parse_beacon_file(): Threw away some information: {line}", "w")
 
 
-def parse_add_log(file: String) -> None:
+def parse_additional_log(file: String) -> None:
     """Parses the file provided and stores an entry per valid line in the DB"""
+    config = get_config()
+    
     logtype, pattern = get_pattern(file)
     row = {'timestamp': None, 'timezone': None,
            'type': None, 'content': None, "parent_id": None}
 
-    date = re.findall(config.pattern_date, file, re.MULTILINE)[0]
+    date = re.findall(config.parsing.cs.date, file, re.MULTILINE)[0]
 
     # parse log entries
     lines = open(file, 'r', encoding="UTF-8").readlines()
@@ -56,7 +105,10 @@ def parse_add_log(file: String) -> None:
         matches = re.match(pattern, line, re.MULTILINE)
 
         # if line is start of a new log entry process, if not append to content
-        if matches != None and len(matches.groups()) == 4:
+        # 4 = ?
+        # 5 for download
+        # 6 for events
+        if matches != None and (len(matches.groups()) == 4 or len(matches.groups()) == 5  or len(matches.groups()) == 6):
             # only save if you have all content
             if row['content'] != None:
                 create_element(Entry, **row)
@@ -69,21 +121,22 @@ def parse_add_log(file: String) -> None:
 
 def build_entry(row: List, logtype: String, date: String, matches: List) -> List:
     """Build an entry attribute based on the logtype provided"""
+    config = get_config()
+    
     row['timestamp'] = datetime.strptime(
         date + " " + matches["timestamp"].split(' ')[1], '%y%m%d %H:%M:%S')
     row['timezone'] = matches["timezone"]
     if logtype == "download":
-        # exclude test ips
-        if is_ip_in_ranges(matches["ipv4"], config.exclude):
-            return row
+        # # exclude test ips, should not even trigger since create_beacon_from_file is checking already
+        # if is_ip_excluded(matches["ipv4"], config.exclusions.internal):
+        #     return row
         row['type'] = logtype
-        row['content'] = f"{matches['path']}\{matches['fname']}"
-        row['parent_id'] = create_element(
-            Beacon, ip=matches["ipv4"], joined=row["timestamp"], date=date)
+        row['content'] = f"{matches['path']}\\{matches['fname']}"
+        row['parent_id'] = create_element(Beacon, ip=matches["ipv4"], joined=row["timestamp"], date=date)
     elif logtype == "events":
-        # exclude test ips
-        if is_ip_in_ranges(matches["ipv4"], config.exclude):
-            return row
+        # # exclude test ips, should not even trigger since create_beacon_from_file is checking already
+        # if is_ip_excluded(matches["ipv4"], config.exclusions.internaly):
+        #     return row
         row['type'] = logtype
         row['content'] = matches["content"]
         row['parent_id'] = create_element(Beacon, ip=matches["ipv4"], user=matches["user"],
