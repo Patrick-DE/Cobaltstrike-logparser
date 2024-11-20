@@ -108,12 +108,17 @@ class Entry(Base):
             return [date, time, hostname, content, user, ip]
 
 
-class Action(Base):
-      """
-      Table definition for the SQLite DB
-      """
-      __tablename__ = "action"
-      id = Column(Integer, primary_key = True)
-      input_id = Column(Integer, ForeignKey("entry.id"))
-      task_id = Column(Integer, ForeignKey("entry.id"))
-      output_id = Column(Integer, ForeignKey("entry.id"))
+# class Web(Base):
+#       timestamp = Column(DateTime)
+#       timezone = Column(String)
+      
+
+# class Action(Base):
+#       """
+#       Table definition for the SQLite DB
+#       """
+#       __tablename__ = "action"
+#       id = Column(Integer, primary_key = True)
+#       input_id = Column(Integer, ForeignKey("entry.id"))
+#       task_id = Column(Integer, ForeignKey("entry.id"))
+#       output_id = Column(Integer, ForeignKey("entry.id"))

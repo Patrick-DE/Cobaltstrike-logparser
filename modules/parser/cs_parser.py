@@ -8,7 +8,7 @@ from modules.sql.sqlite_model import EntryType, Beacon, Entry
 import threading
 from datetime import datetime
 
-class BeaconLogParser:
+class CSLogParser:
     def __init__(self, filepath: str, db_path: str, debug: bool = False):
         self.filepath = filepath
         self.parsed_data = []
@@ -44,15 +44,12 @@ class BeaconLogParser:
 
     @staticmethod
     def parse_beacon_log(filepath: str, db_path: str, debug: bool = False):
-        parser = BeaconLogParser(filepath, db_path, debug)
+        parser = CSLogParser(filepath, db_path, debug)
         parser.parse()
 
     def parse(self):
         with open(self.filepath, 'r') as file:
             for line in file:
-                if line == "\n" or line == "":
-                    continue
-                
                 parsed_line = self.parse_line(line)
                 if parsed_line and self.is_accumulating_output and parsed_line['type'] != 'output':
                     # store the output of the previous command
@@ -78,12 +75,11 @@ class BeaconLogParser:
                     elif parsed_line['type'] == 'output' or parsed_line['type'] == 'received_output' or parsed_line['type'] == 'error':
                         # Accumulate output for the current command
                         self.is_accumulating_output = True
-                        if 'output' in parsed_line:
-                            self.current_output += parsed_line['output']
+                        self.current_output += parsed_line['content']
                     else:
                         # Store any other type of entry immediately
                         if self.current_command and self.current_output:
-                            # self.store_entry_to_db({'type': 'output', 'timestamp': self.current_command['timestamp'], 'timezone': self.current_command["timezone"], 'content': self.current_output.strip()})
+                            self.store_entry_to_db({'type': 'output', 'timestamp': self.current_command['timestamp'], 'timezone': self.current_command["timezone"], 'content': self.current_output.strip()})
                             self.current_command = None
                             self.current_output = ""
                             self.is_accumulating_output = False
@@ -92,11 +88,11 @@ class BeaconLogParser:
                     # add the output to the current command
                     if self.is_accumulating_output:
                         self.current_output += line
+                    elif re.match(r'^\s*$', line):
+                        continue
                     else:
                         print(f"Could not parse {self.filepath} - {line}")
             # Last line of the file: Store the last command of the file and its output if applicable
-            # if self.current_command:
-            #     self.store_entry_to_db(self.current_command)
             if self.current_output:
                 self.store_entry_to_db({'type': 'output', 'timestamp': self.current_command['timestamp'], 'timezone': self.current_command["timezone"], 'content': self.current_output.strip()})
 

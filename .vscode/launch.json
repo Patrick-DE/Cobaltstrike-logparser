@@ -6,51 +6,43 @@
     "configurations": [
         {
             "name": "Python: Dbg-GenDB",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args":["-w 1", "-p ./", "-o results", "-e config.yml", "-m"]
-        },
-        {
-            "name": "Python: Dbg-ParseBeacons",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/gimmelogs.py",
-            "console": "integratedTerminal",
-            "args":["-w 1", "-p ./", "-e config.yml"]
+            "args":["-w 1", "-l ./", "-c config.yml", "-m"]
         },
         {
             "name": "Python: Dbg-Report",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args":["-w 1", "-d ./log.db", "-e config.yml", "-m"]
-        },
-        {
-            "name": "Python: SingleThread",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/gimmelogs.py",
-            "console": "integratedTerminal",
-            "args": ["-w 1", "-p C:\\Users\\patri\\Downloads\\projects\\Wigglytuff\\report\\logs", "-o ./results", "-e config.yml", "-m"]
+            "args":["-w 1", "-p C:\\Users\\patri\\Downloads\\logs\\cs", "-c config.yml", "-m"]
         },
         {
             "name": "Python: MultiThread",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args": ["-w 16", "-p ./", "-o ./results", "-e config.yml", "-m"]
+            "args": ["-w 16", "-p ./", "-c config.yml", "-m"]
         },
         {
-            "name": "Python: DEBUG",
-            "type": "python",
+            "name": "Python: CS DEBUG",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args": ["-w 1", "-m", "-p C:\\Users\\patri\\Downloads\\projects\\Kilimanjaro\\logs\\sc1", "-e config.yml"]
+            "args": ["-x cs", "-w 1", "-m", "-l C:\\Users\\patri\\Downloads\\logs\\cs", "-c config.yml"]
+        },
+        {
+            "name": "Python: BR DEBUG",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/gimmelogs.py",
+            "console": "integratedTerminal",
+            "args": ["-x br", "-w 1", "-m", "-l C:\\Users\\patri\\Downloads\\logs\\br", "-c config.yml"]
         },
     ]
 }

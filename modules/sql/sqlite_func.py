@@ -247,15 +247,17 @@ def get_entry_by_param(timestamp, timezone, type, content):
     finally:
         session.close()
 
-    return record
+    return excel_save(redact(record.content))
 
 
 def get_all_entries_filtered(filter: EntryType) -> List[Entry]:
     session = SESSION()
     try:
         records: Entry = session.execute(select(Entry).where(Entry.type == filter).order_by(Entry.timestamp.asc()))
-        result = records.unique().scalars().fetchall()
-        return result
+        results = records.unique().scalars().fetchall()
+        for result in results:
+            result.content = excel_save(redact(result.content))
+        return results
     except Exception as ex:
         log(f"get_all_entries_filtered() Failed: {ex}", "e")
     finally:
@@ -276,8 +278,10 @@ def get_all_entries_filtered_containing(filter: EntryType, cont: String) -> List
                 )
             ).order_by(Entry.timestamp.asc())
         )
-        result = records.unique().scalars().fetchall()
-        return result
+        results = records.unique().scalars().fetchall()
+        for result in results:
+            result.content = excel_save(redact(result.content))
+        return results
     except Exception as ex:
         log(f"get_all_entries_filtered_containing() Failed: {ex}", "e")
     finally:
