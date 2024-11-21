@@ -2,6 +2,7 @@
 logs/
 log.db
 results/
+config.yml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -337,15 +337,20 @@ def test_remove_clutter():
 def build_filter_conditions(filters: List[str]):
     """Build SQLAlchemy filter conditions from list of strings"""
     or_conditions = []
-
-    for filter_item in filters:
-        if isinstance(filter_item, dict):
-            # '_and' condition with multiple strings
-            and_parts = [part.strip() for part in filter_item["_and"]]
-            and_conditions = [Entry.content.contains(part) for part in and_parts]
-            or_conditions.append(and_(*and_conditions))
-        else:
-            or_conditions.append(Entry.content.contains(filter_item))
+    try:
+        for filter_item in filters:
+            if isinstance(filter_item, dict):
+                if "_and" in filter_item:
+                    and_conditions = [Entry.content.contains(part) for part in filter_item["_and"]]
+                    or_conditions.append(and_(*and_conditions))
+                if "_regex" in filter_item:
+                    regex_conditions = [Entry.content.op('REGEXP')(part) for part in filter_item["_regex"]]
+                    for regex in regex_conditions:
+                        or_conditions.append(regex)
+            else:
+                or_conditions.append(Entry.content.contains(filter_item))
+    except Exception as e:
+        log(f"Please format your filter correctly in the config.yml: {e}", "e")
 
     return or_conditions
 
@@ -418,7 +423,7 @@ def remove_via_ip(excluded_ranges, public_ip=False):
     finally:
         session.close()
 
-def remove_via_hostname(excluded_hostnames):
+def remove_beacons_via_hostname(excluded_hostnames):
     """Remove beacons and entries where hostname matches excluded hostnames in config"""
     session = SESSION()
     try:
@@ -437,7 +442,7 @@ def remove_via_hostname(excluded_hostnames):
         if beacon_ids:
             # Remove related entries first
             session.query(Entry).filter(
-                Entry.beacon_id.in_(beacon_ids)
+                Entry.parent_id.in_(beacon_ids)
             ).delete(synchronize_session=False)
 
             # Remove beacons

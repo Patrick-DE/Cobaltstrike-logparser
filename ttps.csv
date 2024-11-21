@@ -1,45 +1,95 @@
 #<COMMMAND/STRING>;Phase/Scenario;Tactic;Technique ID;Technique Name;Goal
  /add /domain;NP;Persistence;T1098;Account Manipulation;Create an NVISO account to not manipulate others and have persistence in the network
+ asktgs;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;The asktgs action will build/parse a raw TGS-REQ/TGS-REP service ticket request using the specified TGT. This will allow to generate a valid ticket for a specified service
+ asktgt;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;The asktgt action will build raw AS-REQ (TGT request) traffic for the specified user and encryption key. This will allow an attacker to impersonate a domain user
+ dump;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;Extract current TGTs and service tickets if in an elevated context. If not elevated, service tickets for the current user are extracted
+ harvest;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;Periodically extract all TGTs every 60 seconds, extract any new TGT KRB-CRED files, and keeps a cache of any extracted TGTs. Every interval, any TGTs that will expire before the next interval are automatically renewed
+ klist;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;List detailed information on the current user's logon session and Kerberos tickets, if not elevated
+ purge;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;Purge all Kerberos tickets from the current logon session
+ tgtdeleg;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;Abuses the Kerberos GSS-API to retrieve a usable TGT for the current user without needing elevation on the host
+ triage;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;Output a table of the current user's Kerberos tickets
 [REDACTED];AO;Defense Evasion, Persistence, Privilege Escalation;T1078;Valid Accounts;Valid accounts were used in order to either gain initial access, establish persistence, or privilege escalate
 \C$;NP;Lateral Movement;T1077;Windows Admin Shares;Interact with file shares and collect credentials, lateral move with administrative rights, via execute scheduled tasks or service execution
+aadprt;NP;Credential Access;T1552.004;Unsecured Credentials: Cloud Instance Metadata API;Extract Azure AD PRT tokens from the machine to use for example in roadtools
+adcs_enum;IF;Discovery;T1046;Network Service Discovery;Identification of Microsoft ADCS on the internal network
+adcs_enum_com;IF;Discovery;T1046;Network Service Discovery;Enumerate CAs and templates in the AD using ICertConfig COM object
+adcs_enum_com2;IF;Discovery;T1046;Network Service Discovery;Enumerate CAs and templates in the AD using IX509PolicyServerListManager COM object
+AddMachineAccount;NP;Persistence;T1136.002;Create Account: Domain Account;Add a machine account to the domain. This is often done in combination with Resoucre Based Constrained Delegation
+adv_audit_policies;IF;Discovery;T1016;System Network Configuration Discovery;Retrieve advanced security audit policies
+arp;IF;Discovery;T1016;System Network Configuration Discovery;List ARP table
 binPath=;NP;Execution;T1569.002;System Services: Service Execution;Modify the service to lateral move between devices within the network
 blockdlls;IF;Execution, Defense Evasion;T1106, T1564;Execution through API;The Blockdll technique prevents the analysis of used process
 browserpivot;AO;Defense Evasion, Credential Access, Privilege Escalation;T1055,T1111,T1078;Process Injection,Two-Factor Authentication Interception,Valid Accounts;
 cacls ;NP;Defense Evasion;T1222;File and Directory Permissions Modification;Change permissions of files and folders
 cat ;NP;Execution;T1059.003;Command and Scripting Interpreter: Windows Command Shell;View files on the target system to gain more information
+cd;NP;Execution;T1059;Command-Line Interface;Change directory within the current shell
 Certify.exe ;NP;Defense Evasion, Privilege Escalation;T1055.012;Process Injection: Process Hollowing;Inject code into processes in order to evade process-based defenses as well as possibly elevate privileges
 checkin;NP;Command and Control;T1102.002;Bidirectional Communication;Check if beacons are alive
+chromedump;NP;Credential Access;T1539;Steal Web Session Cookie;Dump credentials, bookmarks or history data from all common browsers
+chromiumkeydump;IF;Credential Access;T1539;Steal Web Session Cookie;Dump credentials, bookmarks or history data from all common browsers
+copy;NP;Execution;T1059;Command-Line Interface;Copy files from one directory to another directory or share
+CredEnum;NP;Credential Access;T1003;OS Credential Dumping;Dump credential on the local system and can also be used with low privileges
+credpack-;NP;Credential Access;T1056.001;OS Credential Dumping;Dumping of os credentials
 credprompt;NP;Collection, Credential Access;T1056.002;Input Capture: GUI Input Capture;Opening an credential prompt to trick an user to entering his clear text credentails
 curl ;NP;Command and Control;T1105;Ingress Tool Transfer;Polling files from an attacker controlled server
 dcsync ;NP;Credential Access;T1003.006;OS Credential Dumping: DCSync;Gather credential stored on the local system, with the goal of receiving high privilege targets or cracking the received passwords
 del ;NP;Defense Evasion;T1070.004;Indicator Removal on Host: File Deletion;Remove files dropped to disk to remove degrease footprint
+detect-hooks ;IF;Defense Evasion;T1562.001;Impair Defenses: Disable or Modify Tools;Detect hooks placed by AV or EDR Vendors to detect malicious behaviour
+dir;NP;Discovery;T1083;File and Directory Discovery;Enumerate files and directories to find interesting files
+domainenum;NP;Discovery;T1482;Domain Trust Discovery;Identify information about the forest and connected domains
+Domaininfo;NP;Discovery;T1482;Domain Trust Discovery;Identify information about the forest and connected domains
 download;AO;Exfiltration;T1005;Data from Local System;Steal data to gain more information about the target
+driversigs;IF;Discovery;T1007;System Service Discovery;Enumerate installed services Imagepaths to check the signing cert against known AV/EDR vendors
+drives;IF;Discovery;T1083;File and Directory Discovery;show drives of the system
 dumpert;NP;Credential Access;T1003,T1055,T1093;Credential Dumping;Gather credential stored on the local system, with the goal of receiving high privilege targets or cracking the received passwords
 dumpert_download;AO;Exfiltration;T1005;Data from Local System;Steal dumped credentails from the system
-enumLocalSessions;NP;Discovery;T1033;System Owner/User Discovery;Get all user and their sessions on the current machine
-inlineExecute-Assembly;IF;Defensive Evasion, Privilege Escalation;T1093;Process Hollowing;Execute an c# executable from memory by injecting it. This allows an attacker to evade detection and stay stealthy
+enum_filter_driver;IF;Discovery;T1012;Query Registry;Enumerate filter drivers
+enumLocalSessions;NP;Discovery;T1033;System Owner/User Discovery;Enumerate currently attached user sessions both local and over RDP
+enumsigning;IF;Discovery;T1007;System Service Discovery;Enumerate if the server has singing enabled
+env;IF;Discovery;T1082;System Information Discovery;Print the environment variables
+etw stop;IF;Defense Evasion;T1562.002;Impair Defenses: Disable or Modify Tools;Stop ETW (Event Tracing for Windows) 
 ExecuteAssembly ;IF;Defensive Evasion, Privilege Escalation;T1093;Process Hollowing;Execute an c# executable from memory by injecting it. This allows an attacker to evade detection and stay stealthy
 Farmer.exe;NP;Credential Access;T1093,T1003;Process Hollowing,OS Credential Dumping;Collecting NetNTLM hashes in a Windows domain by creating a local WebDAV server were attackers connect to
 findLoadedModule ;NP;Discovery;T1057;Process Discovery;Get the module loaded by a process, provides information on loaded AV/EDR modules and provide information for patching processes
+forward port;NP;Command and Control;T1572;Protocol Tunneling;Forwarding a port form a victim machine to the attacker in order to connect to only locally available services
 get scheduled tasks;IF;Execution, Persistence, Privilege Escalation;T1054;Scheduled Task/Job;Get the scheduled tasks to verify persistence or show available tasks for privilege escalation
+get_password_policy;IF;Discovery;T1201;Password Policy Discovery;Get target server or domain's configured password policy and lockouts
+GetMachineAccountQuota;IF;Discovery;T1082;System Information Discovery;Get the quote of how many machine accounts can be created in the domain. Even if it says above 0 it is still possible that the persmissions are sufficient to create a machine account
 getuid;NP;Discovery;T1087;Account Discovery;Get the unique id for the user, in order to identify which user is currently used
+gpresult ;IF;Discovery;T1615;Group Policy Discovery;Identify information about the GPOs applied to the given host
 Grouper2.exe;NP;Lateral Movement;T1210;Exploitation of Remote Services;Find vulnerabilities in AD Group Policy
+handlekatz;NP;Credential Access;T1003;Credential Dumping;Gather credential stored on the local system, with the goal of receiving high privilege targets or cracking the received passwords
 Harnass.exe ;IF;Defense Evasion;T1562.001;Impair Defenses;Protect malware from being detected or blocked
 hashdump;NP;Credential Access;T1003;Credential Dumping;Gather credential stored on the local system, with the goal of receiving high privilege targets or cracking the received passwords
+HiddenDesktop;NP;Execution;T1564.003;Hide Artifacts: Hidden Window;Connecting to a target server to execute graphical applications
 icacls ;NP;Defense Evasion;T1222;File and Directory Permissions Modification;Change permissions of files and folders
 inject-ub ;NP;Defensive Evasion, Privilege Escalation;T1055;Process Injection;Inject code into processes in order to evade process-based defenses as well as possibly elevate privileges
+inline-execute;NP;Defense Evasion;T1055;Process Injection;Execute an executable from memory by injecting it. This allows an attacker to evade detection and stay stealthy
+inlineExecute-Assembly;IF;Defensive Evasion, Privilege Escalation;T1093;Process Hollowing;Execute an c# executable from memory by injecting it. This allows an attacker to evade detection and stay stealthy
+inline-execute-assembly;NP;Defense Evasion;T1055;Process Injection;Execute an c# executable from memory by injecting it. This allows an attacker to evade detection and stay stealthy
 Inveigh.exe;NP;Credential Access, Collection;T1557.001;Adversary-in-the-Middle: LLMNR/NBT-NS Poisoning and SMB Relay;Poison name services to gather hashes and credentials from systems within a local network
-ipconfig;NP;Discovery;T1016;System Network Configuration Discovery;Get information about the device which was compromised and the subnet in which is is located
+ipconfig;NP;Discovery;T1016;System Network Configuration Discovery;List IPv4 address, hostname, and DNS server
+Kerberoast;NP;Credential Access;T1558.003;Steal or Forge Kerberos Tickets: Kerberoasting;Request a TGT encrypted with the password from the domain controller. This allows an attacker to crack the hash offline via hashcat or john
 kerberos_ticket_purge;NP;Defensive Evasion, Lateral Movement;T1550.003;Pass the Ticket;The stolen Kerberos tickets is being used to move laterally within the environment and bypassing normal system access controls
+kerberos_ticket_use;NP;Defensive Evasion, Lateral Movement;T1550.003;Use Alternate Authentication Material: Pass the Ticket;Inject a Kerberos ticket into the current session
+kernelkatz;NP;Credential Access;T1003;OS Credential Dumping;Dumping of os credentials
 keylogger;NP;Collection, Credential Access;T1056.001;Input Capture: Keylogging;Gather plain text credentials or connection details from the user
 kill ;NP;Impact;T1489;Service Stop;Stopping processes allows to render those service unavailable, in this case it was used to stop beacon processes
+klist;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;Show list of Kerberos tokens
+lazagne.exe;IF;Credential Access;T1555;Credentials from Password Stores;Dump credentials, bookmarks or history data from all common browsers
 ldapsearch ;NP;Discovery;T1482,T1087.002;Domain Trust Discovery, Account Discovery: Domain Account;Get information about users and domain trust
 link ;NP;Discovery;T1090;Proxy;Proxy beacon communication via a different beacon in order to establish connection to the c2 server
+list_firewall_rules;IF;Discovery;T1016;System Network Configuration Discovery;List Windows firewall rules
+listdns;IF;Discovery;T1016;System Network Configuration Discovery;List DNS cache entries. Attempt to query and resolve each
+listmods;IF;Discovery;T1057;Process Discovery;List process modules (DLL). Target current process if PID is empty. Complement to driversigs to determine if our process was injected by AV/EDR
 listpipes;NP;Lateral Movement;T1570;Lateral Tool Transfer;Enumerate the available pipes to see which once are available for connecting other beacons or tooling
+locale;IF;Discovery;T1082;System Information Discovery;List system locale language, locale ID, date, time, and country
+lockless-enum;NP;Credential Access;T1003;OS Credential Dumping;Accessing a file which is locked by another process
 logonpasswords;NP;Credential Access;T1003;Credential Dumping;Gather credential stored on the local system, with the goal of receiving high privilege targets or cracking the received passwords
+logonserver;NP;Discovery;T1016;System Network Configuration Discovery;Identify the domain controller used by the host
 ls;NP;Discovery;T1083;File and Directory Discovery;View files on the target system to gain more information
 lsadump;NP;Credential Access;T1003;Credential Dumping;Gather credential stored on the local system, with the goal of receiving high privilege targets or cracking the received passwords
-make_token ;NP;Defense Evasion, Privilege Escalation;T1134.003;Access Token Manipulation: Make and Impersonate Token;Make and impersonate tokens to escalate privileges and bypass access controls
+make_token;NP;Defense Evasion, Privilege Escalation;T1134.003;Access Token Manipulation: Make and Impersonate Token;Make and impersonate tokens to escalate privileges and bypass access controls
 maketoken ;NP;Defense Evasion, Privilege Escalation;T1134.003;Access Token Manipulation: Make and Impersonate Token;Make and impersonate tokens to escalate privileges and bypass access controls
 mimikatz;NP;Credential Access;T1003;Credential Dumping;Gather credential stored on the local system, with the goal of receiving high privilege targets or cracking the received passwords
 mkdir ;NP;Execution;T1059.003;Command and Scripting Interpreter: Windows Command Shell;Make a directory on the victims computer to easier cleanup the footprints afterwards, or to leverage an attack
@@ -51,113 +101,122 @@ net localgroup ;NP;Discovery;T1087;Account Discovery;Adds, displays, or modifies
 net sessions;NP;Discovery;T1033;System Owner/User Discovery;Get all user and their sessions on the current machine
 net share ;NP;Discovery;T1135;Network Share Discovery;Displays information about all of the resources that are shared on the local computer
 net user;NP;Discovery;T1087;Account Discovery;Adds or modifies user accounts, or displays user account information
-netGroupListMembers;NP;Discovery;T1087;Account Discovery;Adds, displays, or modifies global groups on the system. In this case we tried to display all available groups
-netLocalGroupListMembers ;NP;Discovery;T1087;Account Discovery;Adds, displays, or modifies global groups on the system. In this case we tried to display all available groups
+netGroupList;IF;Discovery;T1087;Account Discovery;List groups from the default or specified domain
+netGroupListMembers;IF;Discovery;T1087;Account Discovery;Adds, displays, or modifies global groups on the system. In this case we tried to display all available groups
+netLocalGroupList;IF;Discovery;T1087;Account Discovery;List local groups from the local or specified computer
+netLocalGroupListMembers ;IF;Discovery;T1087;Account Discovery;Adds, displays, or modifies global groups on the system. In this case we tried to display all available groups
+netLocalGroupListMembers2;IF;Discovery;T1087;Account Discovery;Modified version of netLocalGroupListMembers that supports BOFHound
+netloggedon;IF;Discovery;T1087;Account Discovery;Return users logged on the local or remote computer
+netloggedon2;IF;Discovery;T1087;Account Discovery;Modified version of netloggedon that supports BOFHound
 netsession;NP;Discovery;T1033;System Owner/User Discovery;Get all user and their sessions on the current machine
+netsession2;NP;Discovery;T1033;System Owner/User Discovery;Modified version of netsession that supports BOFHound
 netshares;NP;Discovery;T1135;Network Share Discovery;Displays information about all of the resources that are shared on the local computer
 netstat;NP;Discovery;T1049;System Network Connections Discovery;Get a listing of network connections to or from the compromised system they are currently accessing or from remote systems by querying for information over the network
+nettime;IF;Discovery;T1082;System Information Discovery;Display time on remote computer
+netuptime;IF;Discovery;T1082;System Information Discovery;Return information about the boot time on the local or remote computer
+netuse;IF;Discovery;T1083;File and Directory Discovery;Show mounted shares
+netuse_add;NP;Lateral Movement;T1021.002;Remote Services: SMB/Windows Admin Shares;Bind a new connection to a remote computer
+netuse_delete;NP;Defense Evasion;T1070.004;Indicator Removal on Host: File Deletion;Delete the bound device / sharename]
+netuse_list;IF;Discovery;T1083;File and Directory Discovery;List all bound share resources or info about target local resource
+netuser;IF;Discovery;T1087;Account Discovery;Get info about specific user. Pull from domain if a domainname is specified
+netview;IF;Discovery;T1018;Remote System Discovery;List reachable computers in the current domain
 noPac.exe ;NP;Privilege Escalation;T1134.001;Access Token Manipulation: Token Impersonation/Theft;Exploit the noPac vulnerability in order to impersonate an domain admin from an standard domain user
 note_token ;NP;Defense Evasion, Privilege Escalation;T1134;Access Token Manipulation;Make a not in the C2 that this session is now using a newly created token
 nslookup ;NP;Discovery;T1016;System Network Configuration Discovery;Get information about the requested device
+OSQL.EXE;AO;Collection;T1213;Data from Information Repositories;Access a database to exfiltrate sensitive data like customer information
 ping ;IF;Discovery;T1018;Remote System Discovery;Provides information about if an device is available on the network and reachable from the host
 portscan ;IF;Discovery;T1046;Network Service Scanning;Get a listing of services running on remote hosts, including those that may be vulnerable to remote software exploitation
 powershell ;NP;Execution;T1059.001;Command and Scripting Interpreter:PowerShell;Abuse PowerShell commands and scripts for execution
+ppid ;IF;Defense Evasion;T1134.004;Access Token Manipulation: Parent PID Spoofing;Use itself as parent process
+probe;NP;Discovery;T1046;Network Service Scanning;Check if a specific port is open
 ps;NP;Discovery;T1057;Process Discovery;Display all running processes in order to identify AV/EDR systems and to get more information about the local system
 pth ;NP;Defense Evasion, Lateral Movement;T1550.002;Use Alternate Authentication Material: Pass the Hash;Using stolen password hashes to move laterally within an environment, bypassing normal system access controls
+pwd;NP;Execution;T1059;Command-Line Interface;Get the current directory
+qprivs;IF;Discovery;T1007;System Service Discovery;Identifying privileges of a specific service
+quser;NP;Discovery;T1033;System Owner/User Discovery;Currenty logged in user and their idle time
 reg delete;NP;Defense Evasion;T1112;Modify Registry;Adversaries may interact with the Windows Registry to hide configuration information within Registry keys, remove information as part of cleaning up, or as part of other techniques to aid in persistence and execution.
-reg_query;NP;Discovery;T1012;Query Registry;Interact with the Windows Registry to gather information about the system, configuration, installed software and checking the persistence setup
-reg query;NP;Discovery;T1012;Query Registry;Interact with the Windows Registry to gather information about the system, configuration, installed software and checking the persistence setup
+reg query;IF;Discovery;T1012;Query Registry;Interact with the Windows Registry to gather information about the system, configuration, installed software and checking the persistence setup
+reg_query;IF;Discovery;T1012;Query Registry;Interact with the Windows Registry to gather information about the system, configuration, installed software and checking the persistence setup
+reg_query_recursive;IF;Discovery;T1012;Query Registry;Recursively enumerate a key starting at path
+regsession;IF;Discovery;T1007;System Service Discovery;Return logged on user SIDs by enumerating HKEY_USERS. BOFHound compatible
+RemoteThreadlessHWBP;NP;Defense Evasion;T1055;Process Injection;Execute an executable from memory by injecting it. This allows an attacker to evade detection and stay stealthy
+resources;IF;Discovery;T1082;System Information Discovery;List memory usage and available disk space on the primary hard drive
 RestrictedAdmin.exe;NP;Defense Evasion;T1112;Modify Registry;Restricted Admin Mode was introduced in Windows 8.1 as an attempt to prevent credential exposure via RDP. While well intentioned, this unfortunately introduced the ability to pass-the-hash to RDP.
 rev2self;NP;Defense Evasion, Privilege Escalation;T1134;Access Token Manipulation;Revert from the newly created token back to the original one
 rm ;AO;Defense Evasion;T1070;Indicator Removal on Host;Remove files dropped to disk to remove degrease footprint
-rportfwd_local;NP;Command and Control;T1090.001;Proxy: Internal Proxy;Use an internal proxy to act as an intermediary for network communications to a different workstation in oder to connect to services running on it
+roadtoken;IF;Discovery;T1087.004;Cloud Account Discovery;Enumerating Azure resources
+routeprint;IF;Discovery;T1016;System Network Configuration Discovery;List IPv4 routes
 rportfwd ;NP;Command and Control;T1090.002;Proxy: External Proxy;Use an external proxy to act as an intermediary for network communications to a command and control server to avoid direct connections to their infrastructure
-Rubeus.exe asktgs;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;The asktgs action will build/parse a raw TGS-REQ/TGS-REP service ticket request using the specified TGT. This will allow to generate a valid ticket for a specified service
-Rubeus.exe asktgt;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;The asktgt action will build raw AS-REQ (TGT request) traffic for the specified user and encryption key. This will allow an attacker to impersonate a domain user
-Rubeus.exe klist;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;List detailed information on the current user's logon session and Kerberos tickets, if not elevated
-Rubeus.exe purge;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;Purge all Kerberos tickets from the current logon session
-Rubeus.exe triage;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;Output a table of the current user's Kerberos tickets
-Rubeus.exe dump;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;Extract current TGTs and service tickets if in an elevated context. If not elevated, service tickets for the current user are extracted
-Rubeus.exe tgtdeleg;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;Abuses the Kerberos GSS-API to retrieve a usable TGT for the current user without needing elevation on the host
-Rubeus.exe harvest;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;Periodically extract all TGTs every 60 seconds, extract any new TGT KRB-CRED files, and keeps a cache of any extracted TGTs. Every interval, any TGTs that will expire before the next interval are automatically renewed
+rportfwd_local;NP;Command and Control;T1090.001;Proxy: Internal Proxy;Use an internal proxy to act as an intermediary for network communications to a different workstation in oder to connect to services running on it
+run;NP;Execution;T1106;Execution through API;Run an executable stored on the client system
 runas;NP;Execution;T1059;Command-Line Interface;Run a process in a different user context, allowing to impersonate the user
 rundll32.exe ;IF;Execution;T1106;Execution through API;Executing commands via the command-line interface on the target host
+SafeHarnass.exe;NP;Discovery;T1082;System Information Discovery;Is an custom version of Seatbelt, Get a lot of information about the local configuration of a system which should help to perform privilege escalation
+sc.exe \\;NP;Discovery;T1007;System Service Discovery;Queries the configuration information like the current status for a specified service.
 sc.exe config;NP;Persistence, Privilege Escalation;T1543.003;Create or Modify System Process: Windows Service;Remotly configure a service to get an initial foothold or elevate privileges
-sc.exe sdshow;NP;Discovery;T1007;System Service Discovery;Queries the configuration information like the service's security descriptor for a specified service in order to check the permissions.
+sc.exe query;IF;Discovery;T1007;System Service Discovery;Queries the configuration information like the current status for a specified service.
+sc.exe sdshow;IF;Discovery;T1007;System Service Discovery;Queries the configuration information like the service's security descriptor for a specified service in order to check the permissions.
 sc.exe start;NP;Execution;T1569.002;System Services: Service Execution;Windows service control manager to execute malicious commands or payloads
 sc.exe stop;NP;Impact;T1489;Service Stop;Stopping a service renders the service unavailable which allows on the one hand to affect availability and on the other hand allows to leteral move via service manipulation
-sc_enum;NP;Discovery;T1007;System Service Discovery;Detecting services in order to find services which are wrongly configured in order to privilege escalate
-sc.exe \\;NP;Discovery;T1007;System Service Discovery;Queries the configuration information like the current status for a specified service.
-sc_query;NP;Discovery;T1007;System Service Discovery;Queries the configuration information like the current status for a specified service.
-sc_qc ;NP;Discovery;T1007;System Service Discovery;Queries the configuration information like the current status for a specified service.
-sc.exe query;NP;Discovery;T1007;System Service Discovery;Queries the configuration information like the current status for a specified service.
+sc_enum;IF;Discovery;T1007;System Service Discovery;Detecting services in order to find services which are wrongly configured in order to privilege escalate
+sc_qc ;IF;Discovery;T1007;System Service Discovery;Queries the configuration information like the current status for a specified service.
+sc_qdescription;IF;Discovery;T1007;System Service Discovery;sc qdescription implementation in BOF
+sc_qfailure;IF;Discovery;T1007;System Service Discovery;Query a service for failure conditions
+sc_qtriggerinfo;IF;Discovery;T1007;System Service Discovery;Query a service for trigger conditions
+sc_query;IF;Discovery;T1007;System Service Discovery;Queries the configuration information like the current status for a specified service.
+sc_start ;NP;Execution;T1569.002;System Services: Service Execution;Start a service
 scheduled task;IF;Execution, Persistence, Privilege Escalation;T1053.005;Scheduled Task/Job: Scheduled Task;Abuse task scheduling functionality to facilitate initial or recurring execution of malicious code
 scheduledtask;IF;Execution, Persistence, Privilege Escalation;T1053.005;Scheduled Task/Job: Scheduled Task;Abuse task scheduling functionality to facilitate initial or recurring execution of malicious code
 schtasks /Delete;IF;Execution, Persistence, Privilege Escalation;T1053.005;Scheduled Task/Job: Scheduled Task;Remove the scheduled task because it is not used or to cleanup and reduce the footprint
+schtasksenum;IF;Discovery;T1053.005;Scheduled Task/Job: Scheduled Task;Enumeration of local schedules tasks
+schtasksquery;IF;T1053.005;T1053.005;Scheduled Task/Job: Scheduled Task;Query the given task on the local or remote computer
 screenshot;AO;Collection;T1113;Screen Capture;Gain information of active programs and purpose of the current workstation
 screenwatch;AO;Collection;T1113;Screen Capture;Gain information of active programs and purpose of the current workstation
 Seatbelt;NP;Discovery;T1082;System Information Discovery;Get a lot of information about the local configuration of a system which should help to perform privilege escalation
-SafeHarnass.exe;NP;Discovery;T1082;System Information Discovery;Is an custom version of Seatbelt, Get a lot of information about the local configuration of a system which should help to perform privilege escalation
+set L;NP;Discovery;T1482;Domain Trust Discovery;Get domain controller
 SharpAllowedToAct.exe;NP;Initial Access;T1199;Trusted Relationship;Takingover a computer object through Resource-Based Constrained Delegation (msDS-AllowedToActOnBehalfOfOtherIdentity)
+SharpChrome.exe;IF;Credential Access;T1539;Steal Web Session Cookie;Dump credentials, bookmarks or history data from all common browsers
 SharpChrome.exe cookies;NP;Credential Access;T1555;Credentials from Password Stores;Extract cookies stored in the Chrome browser in oder to impersonate this user on web applications
 SharpChrome.exe logins;NP;Credential Access;T1555;Credentials from Password Stores;Extract passwords stored in the Chrome browser in oder to impersonate this user
 SharpDoor.exe;NP;Defense Evasion;T1601.001;Modify System Image: Patch System Image;Patching termsrv.dll file to allowed multiple RDP (Remote Desktop) sessions 
 SharpDPAPI.exe;NP;Credential Access;T1555;Credentials from Password Stores;Receive the credentails stored in the DPAPI by dumping the key for decrypting them.
 sharphound.exe ;NP;Discovery;T1097,T1482,T1615,T1069;Account Discovery, Group Policy Discovery, Domain Trust Discovery, Permission Groups Discovery;Data collector for BloodHound enabling the RT to gather more insights into the AD and identify paths to privilege escalate within the environment
 SharpMove.exe;NP;Lateral Movement;T1210;Exploitation of Remote Services;Performing Authenticated Remote Execution to enable easier lateral movement
+SharpRDP.exe;NP;Lateral Movement;T1021.001;Remote Services: Remote Desktop Protocol;Use Valid Accounts to log into a computer using the Remote Desktop Protocol (RDP) to perform actions as the logged-on user
 sharpshares.exe;NP;Discovery;T1135;Network Share Discovery;Enumerate accessible network shares in a domain to identify information or use for lateral movement
 SharpSniper.exe;AO;Discovery;T1018;Remote System Discovery;Find the IP address of a targeted users so that the workstation can be targeted
 SharpSvc.exe;NP;Persistence, Privilege Escalation;T1543.003;Create or Modify System Process: Windows Service;Interact with the SC Manager API in order to manipulate a remote service and escalate privileges or leteral move
 sharptask.exe ;NP;Execution, Persistence, Privilege Escalation;T1053.005;Scheduled Task/Job: Scheduled Task;Abuse task scheduling functionality to facilitate initial or recurring execution of malicious code
+SharpUp;NP;Process Injection;T1082;System Information Discovery;Get a lot of information about the local configuration of a system which should help to perform privilege escalation
 SharpView.exe Get-DomainObject;NP;Discovery;T1033;System Owner/User Discovery;Searches for all objects matching the criteria in order to get more information on the objective
+SharpWeb.exe;IF;Credential Access;T1539;Steal Web Session Cookie;Dump credentials, bookmarks or history data from all common browsers
 Snaffler.exe;NP;Credential Access;T1552;Unsecured Credentials;Search compromised systems and shares to find and obtain insecurely stored credentials
 socks ;NP;Command and Control;T1090;Proxy;Use a connection proxy to direct network traffic between systems or act as an intermediary for network communications to a command and control server to avoid direct connections to their infrastructure
+socks_stop;NP;Command and Control;T1090.002;External Proxy;Stop the executed socks server
 spawn ;NP;Defense Evasion, Privilege Escalation;T1055.012;Process Injection: Process Hollowing;Inject code into processes in order to evade process-based defenses as well as possibly elevate privileges
-StandIn.exe --delegation;NP;Initial Access;T1199;Trusted Relationship;Return all accounts that have either unconstrained or constrained delegation permissions, or have inbound resource-based constrained delegation privileges.
-StandIn.exe --object;NP;Discovery;T1033;System Owner/User Discovery;Queries the AD with an LDAP filter and returns a single object with all information associated to this object
+spawnas ;NP;Defense Evasion, Privilege Escalation;T1134.003;Access Token Manipulation: Make and Impersonate Token;Spawn a process as another user to escalate privileges and bypass access controls
 StandIn.exe --computer;NP;Persistence, Privilege Escalation;T1136.002,T1078;Create Account: Domain Account,Valid Accounts;Create or modify an computer account within the active directory
+StandIn.exe --delegation;NP;Initial Access;T1199;Trusted Relationship;Return all accounts that have either unconstrained or constrained delegation permissions, or have inbound resource-based constrained delegation privileges.
 StandIn.exe --group;NP;Discovery;T1087;Account Discovery;Enumerate group membership or user memberships and provide rudementary details for the member objects
+StandIn.exe --object;NP;Discovery;T1033;System Owner/User Discovery;Queries the AD with an LDAP filter and returns a single object with all information associated to this object
 steal_token ;NP;Defense Evasion, Privilege Escalation;T1134.001;Access Token Manipulation: Token Impersonation/Theft;Imperonate user in order to execute processes with his privileges
-tasklist;NP;Discovery;T1057;Process Discovery;Indentify running processes
+syscall-method;IF;Discovery;T1082;System Information Discovery;identifying the currently used syscall-method by the beacon
+TakeOwn;NP;Defensive Evasion;T1222.001;File and Directory Permissions Modification: Windows File and Directory Permissions Modification;Set the owner of a file in order to restrict access
+Tasked beacon to accept TCP Beacon sessions;NP;Lateral Movement;T1071;Application Layer Protocol;The attacker uses SMB for communicating between agents within the internal network to blend in with the existing traffic
+Tasked beacon to create a token;NP;Defense Evasion, Privilege Escalation;T1134.003;Access Token Manipulation: Make and Impersonate Token;Make and impersonate tokens to escalate privileges and bypass access controls
+Tasked beacon to remove;NP;Defense Evasion;T1070.004;Indicator Removal on Host: File Deletion;Remove files dropped to disk to remove degrease footprint
+Tasked beacon to revert token;NP;Defense Evasion, Privilege Escalation;T1134.003;Access Token Manipulation: Make and Impersonate Token;Remove the impersonated tokens to change privileges and bypass access controls
+tasklist;NP;Discovery;T1057;Process Discovery;List running processes including PID, PPID, and ComandLine (uses wmi)
+tgtdelegation;NP;Credential Access;T1558.001;Steal or Forge Kerberos Tickets: Golden Ticket;Using a tgt ticket to impersonate an account
+tracert;IF;Discovery;T1016;System Network Configuration Discovery;Gather information abou the network infrastructure and identify routes on the internal network and test if paths are reachable
 type ;NP;Execution;T1059;Command-Line Interface;Display the file contents without downloading the file
 unhook;IF;Defense Evasion;TA0005;Defense Evasion;Remove API hooks from a Beacon process, through refreshing the imported DLLs in order to stay undetected by removing for example AMSI
 upload;IF;Command and Control;T1105;Ingress Tool Transfer;Upload the file in order to infect more systems and privilege escalate
-zipper;AO;Collection;T1560;Archive Collected Data;Archive the file in order to reduce the size during exfiltration
-pwd;NP;Execution;T1059;Command-Line Interface;Get the current directory
-cd;NP;Execution;T1059;Command-Line Interface;Change directory within the current shell
-copy;NP;Execution;T1059;Command-Line Interface;Copy files from one directory to another directory or share
-WinPeas;NP;Process Injection;T1082;System Information Discovery;Get a lot of information about the local configuration of a system which should help to perform privilege escalation
-SharpUp;NP;Process Injection;T1082;System Information Discovery;Get a lot of information about the local configuration of a system which should help to perform privilege escalation
-SharpRDP.exe;NP;Lateral Movement;T1021.001;Remote Services: Remote Desktop Protocol;Use Valid Accounts to log into a computer using the Remote Desktop Protocol (RDP) to perform actions as the logged-on user
-handlekatz;NP;Credential Access;T1003;Credential Dumping;Gather credential stored on the local system, with the goal of receiving high privilege targets or cracking the received passwords
-set L;NP;Discovery;T1482;Domain Trust Discovery;Get domain controller
-Tasked beacon to accept TCP Beacon sessions;NP;Lateral Movement;T1071;Application Layer Protocol;The attacker uses SMB for communicating between agents within the internal network to blend in with the existing traffic
-Tasked beacon to create a token;NP;Defense Evasion, Privilege Escalation;T1134.003;Access Token Manipulation: Make and Impersonate Token;Make and impersonate tokens to escalate privileges and bypass access controls
-dir;NP;Discovery;T1083;File and Directory Discovery;Enumerate files and directories to find interesting files
-Tasked beacon to remove;NP;Defense Evasion;T1070.004;Indicator Removal on Host: File Deletion;Remove files dropped to disk to remove degrease footprint
-spawnas ;NP;Defense Evasion, Privilege Escalation;T1134.003;Access Token Manipulation: Make and Impersonate Token;Spawn a process as another user to escalate privileges and bypass access controls
-Tasked beacon to revert token;NP;Defense Evasion, Privilege Escalation;T1134.003;Access Token Manipulation: Make and Impersonate Token;Remove the impersonated tokens to change privileges and bypass access controls
-klist;NP;Credential Access;T1558;Steal or Forge Kerberos Tickets;Show list of Kerberos tokens
+uptime;NP;Discovery;T1082;System Information Discovery;List system boot time and how long it has been running
+vssenum;NP;Discovery;T1005;Data from Local System;Enumerate Shadow Copies on some Server 2012+ servers
 whoami;IF;Discovery;T1082;System Information Discovery;Identify the user available in the current session
-schtasksenum;IF;Discovery;;;Enumeration of local schedules tasks
-adcs_enum;NP;;;;Identification of Microsoft ADCS on the internal network
-SharpChrome.exe;IF;Credential Access;;;Dump credentials, bookmarks or history data from all common browsers
-lazagne.exe;IF;Credential Access;;;Dump credentials, bookmarks or history data from all common browsers
-SharpWeb.exe;IF;Credential Access;;;Dump credentials, bookmarks or history data from all common browsers
-chromiumkeydump;IF;Credential Access;;;Dump credentials, bookmarks or history data from all common browsers
-domainenum;NP;Discovery;T1482;Domain Trust Discovery;Identify information about the forest and connected domains
-TakeOwn;NP;;;;Set the owner of a file in order to restrict access
-gpresult ;IF;Discovery;;;Identify information about the GPOs applied to the given host
-tracert;IF;;;;Gather information abou the network infrastructure and identify routes on the internal network and test if paths are reachable
-logonserver;NP;Discovery;;;Identify the domain controller used by the host
-HiddenDesktop;NP;;;;Connecting to a target server to execute graphical applications
-forward port;NP;;;;Forwarding a port form a victim machine to the attacker in order to connect to only locally available services
-tgtdelegation;NP;;;;
-quser;NP;Discovery;;;Currenty logged in user and their idle time
-Domaininfo;NP;Discovery;T1482;Domain Trust Discovery;Identify information about the forest and connected domains
-CredEnum;NP;Credential Access;;;Dump credential on the local system and can also be used with low privileges
-GetMachineAccountQuota;NP;;;;Get the quote of how many machine accounts can be created in the domain. Even if it says above 0 it is still possible that the persmissions are sufficient to create a machine account
-AddMachineAccount;NP;;;;Add a machine account to the domain. This is often done in combination with Resoucre Based Constrained Delegation
-Kerberoast;NP;;;;Request a TGT encrypted with the password from the domain controller. This allows an attacker to crack the hash offline via hashcat or john
-OSQL.EXE;AO;;;;Access a database to exfiltrate sensitive data like customer information
-qprivs;IF;Discovery;;;Identifying 
+windowlist;IF;Discovery;T1518.002;Application Window Discovery;List visible windows in the current user session
+WinPeas;NP;Process Injection;T1082;System Information Discovery;Get a lot of information about the local configuration of a system which should help to perform privilege escalation
+wmi_query;NP;Discovery;T1047;Windows Management Instrumentation;Run a wmi query and display results in CSV format
+wts_enum_remote_processes;NP;Discovery;T1057;Process Discovery;Enumerate remote processes using WTS APIs, also useful to check if you have access to a system
+zipper;AO;Collection;T1560;Archive Collected Data;Archive the file in order to reduce the size during exfiltration

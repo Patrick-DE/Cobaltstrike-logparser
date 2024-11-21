@@ -1,0 +1,90 @@
+exclusions:
+  internal: []
+  external: []
+  hostnames: []
+  commands:
+    - _regex:
+      - 'sleep \d+\s*\d*'
+      - '^\s*exit\s*$'
+    - 'beacon to exit'
+    - 'beacon to sleep'
+    - 'beacon to list'
+    - 'beacon to back'
+    - 'to become interactive'
+    - 'beacon queue'
+    - 'set_edr'
+    - 'list_edrs'
+    - 'rating'
+    - 'list_SAFE_COMMANDS'
+    - 'save_edr_data'
+    - 'load_edr_data'
+    - 'clear'
+    - _and:
+      - 'jobs'
+      - 'input'
+    - 'jobkill'
+    - 'cancel'
+    - 'received keystrokes'
+    - '<BeaconBot>'
+    - 'beacon is late'
+    - 'received screenshot'
+    - 'note'
+    - 'checkin'
+    - 'helpx'
+redactions:
+  patterns:
+    password_params:
+      pattern: '((?:\/|-+|\s)(?:p|pass|password|pvk)\s*(?:=|\s|:)\s*)\S+'
+      description: 'Matches password parameters and their values'
+
+    hash_headers:
+      pattern: '((?:NTLM|SHA1)\s+:\s)\b\w+\b'
+      description: 'Matches NTLM and SHA1 hash headers'
+
+    logon_passwords:
+      pattern: '(\w+:\d+:)\w+:\w+:::'
+      description: 'Matches logonpasswords output format'
+
+    crypto_params:
+      pattern: '(.*\/(?:aes256|rc4|statekey|ticket)\s*(?:=|:)\s*)(.*?)\s*$'
+      description: 'Matches cryptographic parameters'
+
+    make_token:
+      pattern: '(make_token .*\s)(.*)'
+      description: 'Matches make_token command and arguments'
+
+    ntlm:
+      pattern: '^(\\$NT\\$)?[a-f0-9]{32}$'
+      description: 'Matches NTLM hash format'
+
+    hex_strings:
+      pattern: '\b([A-Fa-f0-9]{64}|[A-Fa-f0-9]{32})\b'
+      description: 'Matches 32 and 64 bit hex strings'
+
+    run_as:
+      pattern: '(runas.*(\/user:)*\b\w+\b\s+)\S+'
+      description: 'Redact runas [/user:]<user> <pw> <executable>'
+
+    net_user:
+      pattern: '(net\suser\s\b\w+\b\s)(.*?)\s'
+      description: 'redact creating new user "net user nviso PW /add"'
+
+    roadtoken:
+      pattern: '(roadtoken\s)(\S+)'
+      description: 'Redact sensitive roadtoken token'
+
+    aadprt:
+      pattern: '(aadprt\s)(\S+)'
+      description: 'Redact sensitive aadprt token'
+
+    encryptionKey:
+      pattern: '(--encryptionKey\s)(\S+)'
+      description: 'Redact encryptionKey'
+
+    kerberos_ask:
+      pattern: '(KerberosAsk\sasktgt\s/userName:\S+\s/domainName:\S+\s/userPassword:)(.*)'
+      description: 'Redact sensitive KerberosAsk password, e.g., "KerberosAsk asktgt /userName:Administrator /domainName:ecorp.local /userPassword:Rain Documentation 3nglish $ymbol /ptt -> KerberosAsk asktgt /userName:Administrator /domainName:ecorp.local /userPassword:***** /ptt"'
+
+  flags:
+    case_insensitive: true
+    replacement: '\1[REDACTED]'

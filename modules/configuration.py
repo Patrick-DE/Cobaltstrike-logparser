@@ -24,11 +24,15 @@ class AndCommand:
     _and: List[str]
 
 @dataclass
+class RegexCommand:
+    _regex: List[str]
+
+@dataclass
 class Exclusions:
     internal: List[str]
     external: List[str]
     hostnames: List[str]
-    commands: List[str|AndCommand]
+    commands: List[str|AndCommand|RegexCommand]
 
 @dataclass
 class Config:
@@ -77,6 +81,8 @@ def is_ip_excluded(ip: str, excluded_ranges: List[str]) -> bool:
     Returns:
         bool: True if IP is in any excluded range
     """
+    # if SMB beacons are used, we dont have an IP
+    if "beacon_" in ip: return False
     try:
         for range in excluded_ranges:
             if ipaddress.ip_address(ip) in ipaddress.ip_network(range):

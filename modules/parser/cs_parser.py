@@ -98,7 +98,7 @@ class CSLogParser:
 
     def parse_line(self, line: str) -> Dict:
         # Regular expressions for different log formats
-        metadata_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[metadata\] (?P<ip_ext>[\d\.]+) <- (?P<ip_int>[\d\.]+); computer: (?P<computer>.*?); user: (?P<user>.*?); process: (?P<process>.*?); pid: (?P<pid>\d+); os: (?P<os>.*?); version: (?P<version>.*?); build: (?P<build>.*?); beacon arch: (?P<arch>.*)')
+        metadata_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[metadata\] (?P<ip_ext>[\w\.\_]+) (?P<direction><-|->) (?P<ip_int>[\d\.]+); computer: (?P<computer>.*?); user: (?P<user>.*?); process: (?P<process>.*?); pid: (?P<pid>\d+); os: (?P<os>.*?); version: (?P<version>.*?); build: (?P<build>.*?); beacon arch: (?P<arch>.*)')
         input_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[input\] <(?P<operator>.*?)> (?P<command>.*)')
         output_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[output\](?P<output>.*)')
         task_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[task\] <(?P<operator>.*?)> (?P<task_description>.*)')
@@ -110,6 +110,7 @@ class CSLogParser:
         job_registered_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[job_registered\] job registered with id (?P<job_id>\d+)')
         job_completed_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[job_completed\] job (?P<job_id>\d+) completed')
         indicator_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[indicator\] file: (?P<file_hash>\w+) (?P<file_size>\d+) bytes (?P<file_path>.+)')
+        note_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[note\] (?P<note_message>.*)')
 
         metadata_match = metadata_pattern.match(line)
         input_match = input_pattern.match(line)
@@ -123,6 +124,7 @@ class CSLogParser:
         job_registered_match = job_registered_pattern.match(line)
         job_completed_match = job_completed_pattern.match(line)
         indicator_match = indicator_pattern.match(line)
+        note_match = note_pattern.match(line)
 
         if metadata_match:
             return {
@@ -221,6 +223,12 @@ class CSLogParser:
                 'file_hash': indicator_match.group('file_hash'),
                 'file_size': indicator_match.group('file_size'),
                 'file_path': indicator_match.group('file_path').strip(),
+            }
+        elif note_match:
+            return {
+                'type': 'note',
+                'timestamp': self.parse_timestamp(note_match.group('timestamp')),
+                'content': note_match.group('note_message').strip(),
             }
         return None
 

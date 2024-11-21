@@ -34,7 +34,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/gimmelogs.py",
             "console": "integratedTerminal",
-            "args": ["-x cs", "-w 1", "-m", "-l C:\\Users\\patri\\Downloads\\logs\\cs", "-c config.yml"]
+            "args": ["-x cs", "-w 1", "-m", "-l C:\\Users\\patri\\Downloads\\logs\\cs\\sc5", "-c config.yml"]
         },
         {
             "name": "Python: BR DEBUG",

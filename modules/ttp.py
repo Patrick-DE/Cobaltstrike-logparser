@@ -21,10 +21,10 @@ class TTPSearcher():
         self.ready = self.verify_ttpfile()
         if self.ready:
             self.read_ttps()
+            self.ttps.sort(key=lambda x: len(x[0]), reverse=True) 
 
 
     def add_ttp(self, tiber :Dict) -> Dict:
-        #tiber = {"Phase":"", "Tactic":"", "Technique ID":"", "Technique Name":"", "Executed on":"", "Operational Guidance":"", "Goal":"", "Result":"", "Thread Actor":"", "Related Findings(s)":"", "Date":"", "Time":""}
         for arr in self.ttps:
             if len(arr) != 6:
                 log(f"The ttp entry (" + ";".join(arr) + ") is not correct!")

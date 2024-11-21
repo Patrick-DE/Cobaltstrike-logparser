@@ -45,7 +45,7 @@ def run(args):
         remove_clutter()
         remove_via_ip(config.exclusions.external, True)
         remove_via_ip(config.exclusions.internal, False)
-        remove_via_hostname(config.exclusions.hostnames)
+        remove_beacons_via_hostname(config.exclusions.hostnames)
 
     if args.output:
         report_input_task(args.output)
