@@ -3,16 +3,16 @@
 ## Usage
 Quick usage:
 ```
-python3 gimmelogs.py -p ./ -o ./
+python3 gimmelogs.py -l <LogDir>
 ```
 Recommended usage:
 ```
-python3 gimmelogs.py -w 16 -m -p ./ -o ./ -e exclude.txt
+python3 gimmelogs.py -l <LogDir> -c config.yml -m
 ```
-1. Download the CobaltStrike "logs" folder to disk and specify this folder as -p PATH.
+1. Download the CobaltStrike "logs" folder to disk and specify this folder as -l logs.
 2. For cleaner reports choose -m 
-3. If you are testing your payloads exclude them via -e
-4. Specify the -o PATH to generate the reports
+3. If you are testing your payloads exclude them via the config -c
+4. Specify the -p PATH to generate the reports and DB into a custom folder
 
 ## Commands
 ```
@@ -22,11 +22,10 @@ optional arguments:
   -h, --help                    show this help message and exit
   -w WORKER, --worker WORKER    Set amount of workers: default=10
   -v, --verbose                 Activate debugging
-  -p PATH, --path PATH          Directory path to start from generating the DB
-  -d DATABASE, --database DATABASE  Database path: default=./results/log.db
-  -o OUTPUT, --output OUTPUT    Output path for CSV
+  -l LOGS, --logs LOGS          Directory path to start crawling the logs
+  -p PATH, --path PATH          Output path for the reports and DB
   -m, --minimize                Remove unnecessary data: keyloggs,beaconbot,sleep,exit,clear
-  -e EXCLUDE, --exclude EXCLUDE A file with one IP-Range per line which should be ignored
+  -c CONFIG, --config CONFIG    A config file, see config_template.yml
 ```
 ## Reporting
 * Report for input and tasks being issued via CobaltStrike
