@@ -11,7 +11,6 @@ from datetime import datetime
 class CSLogParser:
     def __init__(self, filepath: str, db_path: str, debug: bool = False):
         self.filepath = filepath
-        self.parsed_data = []
         # Extract beacon ID from the filename
         self.beacon_id = self.extract_beacon_id_from_filename(filepath)
         # Extract date from the folder name
@@ -46,6 +45,12 @@ class CSLogParser:
     def parse_beacon_log(filepath: str, db_path: str, debug: bool = False):
         parser = CSLogParser(filepath, db_path, debug)
         parser.parse()
+
+    @staticmethod
+    def parse_timestamp(self, timestamp_str: str) -> datetime:
+        # get the current year
+        return datetime.strptime(self.year_prefix + "/" + timestamp_str, "%y/%m/%d %H:%M:%S %Z")
+
 
     def parse(self):
         with open(self.filepath, 'r') as file:
@@ -109,7 +114,7 @@ class CSLogParser:
         error_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[error\] (?P<error_message>.*)')
         job_registered_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[job_registered\] job registered with id (?P<job_id>\d+)')
         job_completed_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[job_completed\] job (?P<job_id>\d+) completed')
-        indicator_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[indicator\] file: (?P<file_hash>\w+) (?P<file_size>\d+) bytes (?P<file_path>.+)')
+        indicator_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[indicator\] (?P<content>file: (?P<file_hash>\w+) (?P<file_size>\d+) bytes (?P<file_path>.+))')
         note_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[note\] (?P<note_message>.*)')
 
         metadata_match = metadata_pattern.match(line)
@@ -220,9 +225,11 @@ class CSLogParser:
             return {
                 'type': 'indicator',
                 'timestamp': self.parse_timestamp(indicator_match.group('timestamp')),
-                'file_hash': indicator_match.group('file_hash'),
-                'file_size': indicator_match.group('file_size'),
-                'file_path': indicator_match.group('file_path').strip(),
+                'timezone': indicator_match.group('timezone'),
+                'content': indicator_match.group('content').strip(),
+                # 'file_hash': indicator_match.group('file_hash'),
+                # 'file_size': indicator_match.group('file_size'),
+                # 'file_path': indicator_match.group('file_path').strip(),
             }
         elif note_match:
             return {
@@ -231,11 +238,6 @@ class CSLogParser:
                 'content': note_match.group('note_message').strip(),
             }
         return None
-
-    @staticmethod
-    def parse_timestamp(self, timestamp_str: str) -> datetime:
-        # get the current year
-        return datetime.strptime(self.year_prefix + "/" + timestamp_str, "%y/%m/%d %H:%M:%S %Z")
 
     def store_entry_to_db(self, entry_data: Dict):
         entry_type = EntryType[entry_data['type']]

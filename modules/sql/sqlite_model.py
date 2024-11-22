@@ -20,6 +20,8 @@ class EntryType(enum.Enum):
       upload = 12
       events = 13
       warning = 14
+      # brute ratel
+      http = 15
 
 
 Base = declarative_base()
@@ -41,6 +43,7 @@ class Beacon(Base):
       build = Column(String, nullable=True)
       arch = Column(String, nullable=True)
       timestamp = Column(DateTime, nullable=False)
+      timezone = Column(String)
       entries = relationship("Entry", back_populates="parent",lazy='joined', join_depth=1)
       
       @property
@@ -107,11 +110,6 @@ class Entry(Base):
                   hostname, user, ip = b.hostname, b.user, b.ip
             return [date, time, hostname, content, user, ip]
 
-
-# class Web(Base):
-#       timestamp = Column(DateTime)
-#       timezone = Column(String)
-      
 
 # class Action(Base):
 #       """

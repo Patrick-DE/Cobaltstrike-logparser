@@ -187,3 +187,14 @@ def excel_save(content: String) -> String:
     if "," in content:
         content.replace(",", ";")
     return content
+
+
+def extract_ips(content: String) -> List:
+    """
+    Extracts IP addresses from a string
+    Args:
+        content: String to extract IPs from
+    Returns:
+        List of IP addresses
+    """
+    return re.findall(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", content)
