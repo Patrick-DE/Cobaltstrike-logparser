@@ -1,4 +1,5 @@
-# Log-Parser for Cobalt Strike
+# C2 Log-Parser
+## Support for Cobalt Strike and Brute Ratel
 
 ## Usage
 Quick usage:
@@ -26,6 +27,7 @@ optional arguments:
   -p PATH, --path PATH          Output path for the reports and DB
   -m, --minimize                Remove unnecessary data: keyloggs,beaconbot,sleep,exit,clear
   -c CONFIG, --config CONFIG    A config file, see config_template.yml
+  -x PARSER, --parser           Select either "cs" (default) or "br"
 ```
 ## Reporting
 * Report for input and tasks being issued via CobaltStrike
