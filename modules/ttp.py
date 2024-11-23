@@ -90,7 +90,7 @@ def report_tiber(output):
     
     for entry in entries:
         tiber = {"Phase":"", "Tactic":"", "Technique ID":"", "Technique Name":"", "Executed on":"", "Operational Guidance":"", "Goal":"", "Result":"", "Thread Actor":"", "Related Findings(s)":"", "Date":"", "Time":""}
-        tiber["Executed on"] = entry.parent.hostname
+        tiber["Executed on"] = entry.parent.hostname if entry.parent.hostname else "N/A"
         tiber["Date"] = entry.timestamp.strftime("%d/%m/%Y")
         tiber["Time"] = entry.timestamp.strftime("%H:%M:%S")
         tiber["Operational Guidance"] = entry.content

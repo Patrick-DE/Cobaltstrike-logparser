@@ -103,7 +103,7 @@ class CSLogParser:
 
     def parse_line(self, line: str) -> Dict:
         # Regular expressions for different log formats
-        metadata_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[metadata\] (?P<ip_ext>[\w\.\_]+) (?P<direction><-|->) (?P<ip_int>[\d\.]+); computer: (?P<computer>.*?); user: (?P<user>.*?); process: (?P<process>.*?); pid: (?P<pid>\d+); os: (?P<os>.*?); version: (?P<version>.*?); build: (?P<build>.*?); beacon arch: (?P<arch>.*)')
+        metadata_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[metadata\] (?P<ip_ext>[\w\.\_]+) (?P<direction><-|->) (?P<ip_int>[\d\.]+); computer: (?P<hostname>.*?); user: (?P<user>.*?); process: (?P<process>.*?); pid: (?P<pid>\d+); os: (?P<os>.*?); version: (?P<version>.*?); build: (?P<build>.*?); beacon arch: (?P<arch>.*)')
         input_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[input\] <(?P<operator>.*?)> (?P<command>.*)')
         output_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[output\](?P<output>.*)')
         task_pattern = re.compile(r'(?P<timestamp>\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<timezone>\w+)) \[task\] <(?P<operator>.*?)> (?P<task_description>.*)')
@@ -137,7 +137,7 @@ class CSLogParser:
                 'timestamp': self.parse_timestamp(self, metadata_match.group('timestamp')),
                 'ip': metadata_match.group('ip_int'),
                 'ip_ext': metadata_match.group('ip_ext'),
-                'computer': metadata_match.group('computer'),
+                'hostname': metadata_match.group('hostname'),
                 'user': metadata_match.group('user'),
                 'process': metadata_match.group('process'),
                 'pid': metadata_match.group('pid'),
@@ -276,25 +276,12 @@ class CSLogParser:
                 ).one_or_none()
 
                 if existing_beacon is None:
-                    beacon = Beacon(
-                        id=self.beacon_id,
-                        ip=metadata['ip'],
-                        ip_ext=metadata['ip_ext'],
-                        hostname=metadata['computer'],
-                        user=metadata['user'],
-                        process=metadata['process'],
-                        pid=metadata['pid'],
-                        os=metadata['os'],
-                        version=metadata['version'],
-                        build=metadata['build'],
-                        arch=metadata['arch'],
-                        timestamp=metadata['timestamp'],
-                    )
+                    beacon = Beacon(**metadata, id=self.beacon_id)
                     self.session.add(beacon)
                 else:
                     existing_beacon.ip = metadata['ip']
                     existing_beacon.ip_ext = metadata['ip_ext']
-                    existing_beacon.hostname = metadata['computer']
+                    existing_beacon.hostname = metadata['hostname']
                     existing_beacon.user = metadata['user']
                     existing_beacon.process = metadata['process']
                     existing_beacon.pid = metadata['pid']

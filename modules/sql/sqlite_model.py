@@ -21,7 +21,9 @@ class EntryType(enum.Enum):
       events = 13
       warning = 14
       # brute ratel
-      http = 15
+      http_request = 15
+      http_log = 16
+      access_denied = 17	
 
 
 Base = declarative_base()

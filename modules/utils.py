@@ -53,7 +53,7 @@ def write_to_csv(filename: String, header: List, rows: List) -> None:
             log("Creating csv: " + filename)
             with open(filename, 'w', encoding='UTF8', newline="") as f:
                 writer = csv.writer(f, dialect="excel",delimiter=";")
-                #writer.writerow("sep=;")
+                # writer.writerow("sep=;")
                 writer.writerow(header)
                 writer.writerows(rows)
         except Exception as ex:
@@ -186,6 +186,8 @@ def excel_save(content: String) -> String:
     """Replaces the csv seperator ',' with ';'"""
     if "," in content:
         content.replace(",", ";")
+    if "\"" in content:
+        content.replace("\"", "'")
     return content
 
 
