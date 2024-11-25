@@ -23,7 +23,7 @@ def report_dl_ul(output):
     """
     get download and upload report
     """
-    entries = get_all_entries_filtered_containing(filter=EntryType.task, cont="Tasked beacon to download")
+    entries = get_all_entries_filtered_containing(filter=EntryType.task, cont="Tasked beacon to download", redact=False)
     entries = entries + get_upload_entries()
     entries.sort(key=sort_on_timestamp)
     rows = []

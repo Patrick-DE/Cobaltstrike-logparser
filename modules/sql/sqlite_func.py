@@ -250,13 +250,16 @@ def get_entry_by_param(timestamp, timezone, type, content):
     return excel_save(redact(record.content))
 
 
-def get_all_entries_filtered(filter: EntryType) -> List[Entry]:
+def get_all_entries_filtered(filter: EntryType, redact: bool=True) -> List[Entry]:
     session = SESSION()
     try:
         records: Entry = session.execute(select(Entry).where(Entry.type == filter).order_by(Entry.timestamp.asc()))
         results = records.unique().scalars().fetchall()
         for result in results:
-            result.content = excel_save(redact(result.content))
+            if redact:
+                result.content = excel_save(redact(result.content))
+            else:
+                result.content = excel_save(result.content)
         return results
     except Exception as ex:
         log(f"get_all_entries_filtered() Failed: {ex}", "e")
@@ -264,7 +267,7 @@ def get_all_entries_filtered(filter: EntryType) -> List[Entry]:
         session.close()
 
 
-def get_all_entries_filtered_containing(filter: EntryType, cont: String) -> List[Entry]:
+def get_all_entries_filtered_containing(filter: EntryType, cont: String, redact: bool=True) -> List[Entry]:
     """
     Get all entrytype called filter which contains sttring called cont
     """
@@ -280,7 +283,10 @@ def get_all_entries_filtered_containing(filter: EntryType, cont: String) -> List
         )
         results = records.unique().scalars().fetchall()
         for result in results:
-            result.content = excel_save(redact(result.content))
+            if redact:
+                result.content = excel_save(redact(result.content))
+            else:
+                result.content = excel_save(result.content)
         return results
     except Exception as ex:
         log(f"get_all_entries_filtered_containing() Failed: {ex}", "e")
