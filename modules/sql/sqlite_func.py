@@ -250,13 +250,13 @@ def get_entry_by_param(timestamp, timezone, type, content):
     return excel_save(redact(record.content))
 
 
-def get_all_entries_filtered(filter: EntryType, redact: bool=True) -> List[Entry]:
+def get_all_entries_filtered(filter: EntryType, redacting: bool=True) -> List[Entry]:
     session = SESSION()
     try:
         records: Entry = session.execute(select(Entry).where(Entry.type == filter).order_by(Entry.timestamp.asc()))
         results = records.unique().scalars().fetchall()
         for result in results:
-            if redact:
+            if redacting:
                 result.content = excel_save(redact(result.content))
             else:
                 result.content = excel_save(result.content)
@@ -267,7 +267,7 @@ def get_all_entries_filtered(filter: EntryType, redact: bool=True) -> List[Entry
         session.close()
 
 
-def get_all_entries_filtered_containing(filter: EntryType, cont: String, redact: bool=True) -> List[Entry]:
+def get_all_entries_filtered_containing(filter: EntryType, cont: String, redacting: bool=True) -> List[Entry]:
     """
     Get all entrytype called filter which contains sttring called cont
     """
@@ -283,7 +283,7 @@ def get_all_entries_filtered_containing(filter: EntryType, cont: String, redact:
         )
         results = records.unique().scalars().fetchall()
         for result in results:
-            if redact:
+            if redacting:
                 result.content = excel_save(redact(result.content))
             else:
                 result.content = excel_save(result.content)
