@@ -185,9 +185,9 @@ def redact(content: str) -> str:
 def excel_save(content: String) -> String:
     """Replaces the csv seperator ',' with ';'"""
     if "," in content:
-        content.replace(",", ";")
+        content = content.replace(",", ";")
     if "\"" in content:
-        content.replace("\"", "'")
+        content = content.replace("\"", "'")
     return content
 
 
