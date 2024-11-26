@@ -27,16 +27,19 @@ class TTPSearcher():
     def add_ttp(self, tiber :Dict) -> Dict:
         for arr in self.ttps:
             if len(arr) != 6:
-                log(f"The ttp entry (" + ";".join(arr) + ") is not correct!")
-                return
-
-            if arr[0].lower() in tiber["Operational Guidance"].lower():
-                tiber["Phase"] = arr[1]
-                tiber["Tactic"] = arr[2]
-                tiber["Technique ID"]  = arr[3]
-                tiber["Technique Name"] = arr[4]
-                tiber["Goal"] = arr[5]
-                return tiber                
+                if '"\n' != arr[0]:
+                    log(f"The ttp entry (" + ";".join(arr) + ") is not correct!")
+                return tiber
+            try:
+                if arr[0].lower() in tiber["Operational Guidance"].lower():
+                    tiber["Phase"] = arr[1]
+                    tiber["Tactic"] = arr[2]
+                    tiber["Technique ID"]  = arr[3]
+                    tiber["Technique Name"] = arr[4]
+                    tiber["Goal"] = arr[5]
+                    return tiber              
+            except Exception as e:
+                log(f"Error while adding TTP from ttp.csv: {e}", "e")  
 
         return tiber
 
@@ -93,7 +96,7 @@ def report_tiber(output):
         tiber["Executed on"] = entry.parent.hostname if entry.parent.hostname else "N/A"
         tiber["Date"] = entry.timestamp.strftime("%d/%m/%Y")
         tiber["Time"] = entry.timestamp.strftime("%H:%M:%S")
-        tiber["Operational Guidance"] = entry.content
+        tiber["Operational Guidance"] = excel_save(redact(entry.content))
         tiber = ttp.add_ttp(tiber)     
         rows.append(tiber.values())
     write_to_csv(output+"\\tiber-report.csv", tiber.keys(), rows)
