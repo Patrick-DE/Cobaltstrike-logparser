@@ -19,13 +19,13 @@ adv_audit_policies;IF;Discovery;T1016;System Network Configuration Discovery;Ret
 arp;IF;Discovery;T1016;System Network Configuration Discovery;List ARP table
 binPath=;NP;Execution;T1569.002;System Services: Service Execution;Modify the service to lateral move between devices within the network
 blockdlls;IF;Execution, Defense Evasion;T1106, T1564;Execution through API;The Blockdll technique prevents the analysis of used process
-browserpivot;AO;Defense Evasion, Credential Access, Privilege Escalation;T1055,T1111,T1078;Process Injection,Two-Factor Authentication Interception,Valid Accounts;
-cacls ;NP;Defense Evasion;T1222;File and Directory Permissions Modification;Change permissions of files and folders
-cat ;NP;Execution;T1059.003;Command and Scripting Interpreter: Windows Command Shell;View files on the target system to gain more information
-cd;NP;Execution;T1059;Command-Line Interface;Change directory within the current shell
+browserpivot;AO;Defense Evasion, Credential Access, Privilege Escalation;T1185;Browser Session Hijacking;Inject into a user's browser to inherit authenticated sessions and access internal resources.
+cacls ;NP;Defense Evasion;T1222;"File and Directory Permissions Modification	";Change permissions of files and folders to bypass access controls.
+cat ;NP;Discovery;T1059.003;Command and Scripting Interpreter: Windows Command Shell;View files on the target system to gain more information
+Defense Evasion;NP;Execution;T1059;Command-Line Interface;Change directory within the current shell
 Certify.exe ;NP;Defense Evasion, Privilege Escalation;T1055.012;Process Injection: Process Hollowing;Inject code into processes in order to evade process-based defenses as well as possibly elevate privileges
-checkin;NP;Command and Control;T1102.002;Bidirectional Communication;Check if beacons are alive
-chromedump;NP;Credential Access;T1539;Steal Web Session Cookie;Dump credentials, bookmarks or history data from all common browsers
+File and Directory Permissions Modification;NP;Command and Control;T1102.002;Bidirectional Communication;Check if beacons are alive
+Change permissions of files and folders to bypass access controls.;NP;Credential Access;T1539;Steal Web Session Cookie;Dump credentials, bookmarks or history data from all common browsers
 chromiumkeydump;IF;Credential Access;T1539;Steal Web Session Cookie;Dump credentials, bookmarks or history data from all common browsers
 copy;NP;Execution;T1059;Command-Line Interface;Copy files from one directory to another directory or share
 CredEnum;NP;Credential Access;T1003;OS Credential Dumping;Dump credential on the local system and can also be used with low privileges
@@ -169,7 +169,7 @@ scheduled task;IF;Execution, Persistence, Privilege Escalation;T1053.005;Schedul
 scheduledtask;IF;Execution, Persistence, Privilege Escalation;T1053.005;Scheduled Task/Job: Scheduled Task;Abuse task scheduling functionality to facilitate initial or recurring execution of malicious code
 schtasks /Delete;IF;Execution, Persistence, Privilege Escalation;T1053.005;Scheduled Task/Job: Scheduled Task;Remove the scheduled task because it is not used or to cleanup and reduce the footprint
 schtasksenum;IF;Discovery;T1053.005;Scheduled Task/Job: Scheduled Task;Enumeration of local schedules tasks
-schtasksquery;IF;T1053.005;T1053.005;Scheduled Task/Job: Scheduled Task;Query the given task on the local or remote computer
+schtasksquery;IF;Discovery;T1053.005;Scheduled Task/Job: Scheduled Task;Query the given task on the local or remote computer
 screenshot;AO;Collection;T1113;Screen Capture;Gain information of active programs and purpose of the current workstation
 screenwatch;AO;Collection;T1113;Screen Capture;Gain information of active programs and purpose of the current workstation
 Seatbelt;NP;Discovery;T1082;System Information Discovery;Get a lot of information about the local configuration of a system which should help to perform privilege escalation
@@ -220,3 +220,15 @@ WinPeas;NP;Process Injection;T1082;System Information Discovery;Get a lot of inf
 wmi_query;NP;Discovery;T1047;Windows Management Instrumentation;Run a wmi query and display results in CSV format
 wts_enum_remote_processes;NP;Discovery;T1057;Process Discovery;Enumerate remote processes using WTS APIs, also useful to check if you have access to a system
 zipper;AO;Collection;T1560;Archive Collected Data;Archive the file in order to reduce the size during exfiltration
+set malloc;IF;Defense Evasion;"T1631.001	";Process Injection: Ptrace System Calls;Inject code into a running process to evade defenses
+set threadex;NP;Defense Evasion;T1055 ;Process Injection;"Modify thread execution methods to inject code into remote processes, evading detection
+"
+set child;NP;Defense Evasion;T1055;Process Injection;Configure child process settings to evade detection mechanisms.
+sleep;NP;Defense Evasion;T1029;Scheduled Task/Job;Introduce delays to evade detection and analysis.
+coffexec;NP;Defense Evasion;T1055;Process Injection;Execute COFF files in memory to avoid writing to disk.
+PersistUserRegKey;IF;Persistence;T1547.001;Registry Run Keys/Startup Folder;Establish persistence via user-level registry keys.
+sysinfo;IF;Discovery;T1082;System Information Discovery;Gather system information for situational awareness.
+userinfo;IF;Discovery;T1087.001;Local Account Discovery;Enumerate local user accounts.
+exit_process;AO;Defense Evasion;T1102.001;Web Services;Terminate processes to evade detection.
+EnumSystemPath;IF;Discovery;T1083;File and Directory Discovery;Enumerate system paths and directories.
+lookup;IF;Discovery;T1083;File and Directory Discovery;Search for specific files or directories.
