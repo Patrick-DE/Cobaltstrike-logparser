@@ -101,9 +101,12 @@ class Entry(Base):
       #       else:
       #             raise ValueError("This function can only be called with EntryType.input or EntryType.task")
 
-      def to_row(self):
+      def to_row(self, redacting=True):
             hostname, user, ip = "","",""
-            content = excel_save(redact(self.content))
+            if redacting:
+                  content = excel_save(redact(self.content))
+            else:
+                  content = excel_save(self.content)
 
             date = self.timestamp.strftime("%d/%m/%y")
             time = self.timestamp.strftime("%H:%M")

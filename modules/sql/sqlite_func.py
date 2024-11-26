@@ -255,11 +255,7 @@ def get_all_entries_filtered(filter: EntryType, redacting: bool=True) -> List[En
     try:
         records: Entry = session.execute(select(Entry).where(Entry.type == filter).order_by(Entry.timestamp.asc()))
         results = records.unique().scalars().fetchall()
-        for result in results:
-            if redacting:
-                result.content = excel_save(redact(result.content))
-            else:
-                result.content = excel_save(result.content)
+        # reduct will be done at .to_row() level
         return results
     except Exception as ex:
         log(f"get_all_entries_filtered() Failed: {ex}", "e")
@@ -267,7 +263,7 @@ def get_all_entries_filtered(filter: EntryType, redacting: bool=True) -> List[En
         session.close()
 
 
-def get_all_entries_filtered_containing(filter: EntryType, cont: String, redacting: bool=True) -> List[Entry]:
+def get_all_entries_filtered_containing(filter: EntryType, cont: String) -> List[Entry]:
     """
     Get all entrytype called filter which contains sttring called cont
     """
@@ -282,11 +278,7 @@ def get_all_entries_filtered_containing(filter: EntryType, cont: String, redacti
             ).order_by(Entry.timestamp.asc())
         )
         results = records.unique().scalars().fetchall()
-        for result in results:
-            if redacting:
-                result.content = excel_save(redact(result.content))
-            else:
-                result.content = excel_save(result.content)
+        # reduct will be done at .to_row() level
         return results
     except Exception as ex:
         log(f"get_all_entries_filtered_containing() Failed: {ex}", "e")
@@ -309,6 +301,7 @@ def get_upload_entries():
             )
         ))
         results = records.unique().scalars().fetchall()
+        # reduct will be done at .to_row() level
         return results
     except Exception as ex:
         log(f"get_element_by_values() Failed: {ex}", "e")
@@ -442,7 +435,8 @@ def remove_beacons_via_hostname(excluded_hostnames):
         # Filter beacons with excluded hostnames
         beacon_ids = [
             beacon.id for beacon in beacons 
-            if beacon.hostname and beacon.hostname in excluded_hostnames
+            # Check if hostname is in excluded_hostnames check only lower case
+            if beacon.hostname and beacon.hostname.lower() in [host.lower() for host in excluded_hostnames]
         ]
 
         if beacon_ids:

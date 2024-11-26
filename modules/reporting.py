@@ -23,12 +23,12 @@ def report_dl_ul(output):
     """
     get download and upload report
     """
-    entries = get_all_entries_filtered_containing(filter=EntryType.task, cont="Tasked beacon to download", redacting=False)
+    entries = get_all_entries_filtered_containing(filter=EntryType.task, cont="Tasked beacon to download")
     entries = entries + get_upload_entries()
     entries.sort(key=sort_on_timestamp)
     rows = []
     for entry in entries:
-        rows.append(entry.to_row())
+        rows.append(entry.to_row(redacting=False))
     header = ["Date", "Time", "Hostname", "File", "User", "IP"]
     write_to_csv(os.path.join(output,"dl-ul-report.csv"), header, rows)
 
